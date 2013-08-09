@@ -2,27 +2,31 @@
 
 from numpy import *
 import re
+import cPickle
 
 DELIMITER = '//////////////////////////////////////////////////\n'
 PARAMS_PATTERN = '(\w*)\s*:\s*(.*)\n'
 
 class histdata:
 	"""Dummy class to provide histogram encapsulation"""
+	
 	def __init__(self, copyhist = None):
+		self.type = None
 		self.title = None
 		self.params = {}
 		self.data = None
 		self.particle = ''
 		self.detector = -1
 		if not copyhist is None:
+			self.type = copyhist.type
 			self.title = copyhist.title
 			self.params = copyhist.params
 			self.data = copyhist.data
 			self.particle = copyhist.particle
 			self.detector = copyhist.detector
-			
+				
 class planetoparse:
-	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results."""
+	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
 	
 	def __init__(self, filename = None, print_stats = False):
 		self.primaries = 0
@@ -38,6 +42,7 @@ class planetoparse:
 		self.primhists = {}
 		if not filename is None:
 			self.parse_file(filename, print_stats)
+		return
 		
 	def __parse_params(self, line):
 		parsed = re.match(PARAMS_PATTERN, line)
@@ -52,6 +57,7 @@ class planetoparse:
 			return None, None
 		
 	def parse_file(self, filename, print_stats = False):
+		"""Parse a Planetocosmics ASCII output file. Set print_stats to True to get information on the parsing results."""
 		infile = open(filename, 'r')
 		line = infile.readline()
 		while not line == '':
@@ -74,22 +80,35 @@ class planetoparse:
 				infile, line = self.__parse_1d_hist(infile, line)
 		infile.close()
 		if print_stats:
-			print 'Successfully parsed', filename
-			print 'Parsing summary:'
-			print 'Number of primaries:', self.primaries
-			print 'Normalisation:', self.normalisation
-			if not self.cosmonuc is None:
-				print 'Cosmogenic nuclide histogram present'
-			print 'Other 2D histograms:', len(self.hists2d)
-			print 'Primaries histograms:', len(self.primhists)
-			print 'Atmosphere energy deposition histograms:', len(self.edep_atmo)
-			print 'Soil energy deposition histograms:', len(self.edep_soil)
-			print 'Flux histograms:', len(self.flux_up)*len(self.flux_up[self.flux_up.keys()[0]]), 'up,', len(self.flux_down)*len(self.flux_down[self.flux_up.keys()[0]]), 'down'
-			print 'Other 1D histograms:', len(self.hists1d)
+			self.print_stats()
+		return
+			
+	def print_stats(self):
+		"""Print information on the number of histograms available."""
+		print 'Number of primaries:', self.primaries
+		print 'Normalisation:', self.normalisation
+		if not self.cosmonuc is None:
+			print 'Cosmogenic nuclide histogram present'
+		print 'Other 2D histograms:', len(self.hists2d)
+		print 'Primaries histograms:', len(self.primhists)
+		print 'Atmosphere energy deposition histograms:', len(self.edep_atmo)
+		print 'Soil energy deposition histograms:', len(self.edep_soil)
+		if not len(self.flux_up) == 0:
+			print 'Upward flux histograms:', len(self.flux_up)*len(self.flux_up[self.flux_up.keys()[0]])
+		else:
+			print 'No upward flux histograms'
+		if not len(self.flux_down) == 0:
+			print 'Downward flux histograms:', len(self.flux_down)*len(self.flux_down[self.flux_up.keys()[0]])
+		else:
+			print 'No downward flux histograms'
+		print 'Other 1D histograms:', len(self.hists1d)
+		return
 
 	def __parse_hist(self, infile, line):
 		res = histdata()
-		res.title = line.split('\t')[1][:-1]
+		line = line.split('\t')
+		res.type = line[0]
+		res.title = line[1][:-1]
 		infile.readline()
 		line = infile.readline()
 		#parse histogram information
@@ -147,6 +166,78 @@ class planetoparse:
 		else:
 			self.hists1d.append(res)
 		return infile, line
+		
+	def save(self, filename):
+		"""Save the contained Planetocosmics result information into a binary file for later use."""
+		outfile = open(filename, 'wb')
+		cPickle.dump(self.primaries, outfile)
+		cPickle.dump(self.normalisation, outfile)
+		cPickle.dump(self.params, outfile)
+		cPickle.dump(self.hists2d, outfile)
+		cPickle.dump(self.cosmonuc, outfile)
+		cPickle.dump(self.hists1d, outfile)
+		cPickle.dump(self.flux_up, outfile)
+		cPickle.dump(self.flux_down, outfile)
+		cPickle.dump(self.edep_soil, outfile)
+		cPickle.dump(self.edep_atmo, outfile)
+		cPickle.dump(self.primhists, outfile)
+		outfile.close()
+		return
+		
+	def load(self, filename, print_stats = False):
+		"""Load the Planetocosmics result information from a binary file."""
+		infile = open(filename, 'rb')
+		self.primaries = cPickle.load(infile)
+		self.normalisation = cPickle.load(infile)
+		self.params = cPickle.load(infile)
+		self.hists2d = cPickle.load(infile)
+		self.cosmonuc = cPickle.load(infile)
+		self.hists1d = cPickle.load(infile)
+		self.flux_up = cPickle.load(infile)
+		self.flux_down = cPickle.load(infile)
+		self.edep_soil = cPickle.load(infile)
+		self.edep_atmo = cPickle.load(infile)
+		self.primhists = cPickle.load(infile)
+		infile.close()
+		if print_stats:
+			self.print_stats()
+		return
+		
+	def __save_hist_to_ascii(self, hist, outfile):
+		outfile.write(DELIMITER)
+		outfile.write(hist.type + '\t' + hist.title + '\n')
+		outfile.write(DELIMITER)
+		for param in hist.params:
+			outfile.write(param + ' : ' + str(hist.params[param]) + '\n')
+		savetxt(outfile, hist.data)
+		return		
+		
+	def save_ascii(self, filename):
+		"""Save the contained Planetocosmics result information into an ASCII file for later use."""
+		outfile = open(filename, 'w')
+		outfile.write('nb_of_primaries : ' + str(self.primaries) + '\n')
+		outfile.write('normalisation_type : ' + str(self.normalisation) + '\n')
+		for param in self.params:
+			outfile.write(param + ' : ' + str(self.params[param]) + '\n')
+		self.__save_hist_to_ascii(self.cosmonuc, outfile)
+		for hist in self.hists2d:
+			self.__save_hist_to_ascii(hist, outfile)
+		for particle in self.flux_up:
+			for detector in self.flux_up[particle]:
+				self.__save_hist_to_ascii(self.flux_up[particle][detector], outfile)
+		for particle in self.flux_down:
+			for detector in self.flux_down[particle]:
+				self.__save_hist_to_ascii(self.flux_down[particle][detector], outfile)
+		for hist in self.edep_soil:
+			self.__save_hist_to_ascii(hist, outfile)
+		for hist in self.edep_atmo:
+			self.__save_hist_to_ascii(hist, outfile)
+		for particle in self.primhists:
+			self.__save_hist_to_ascii(self.primhists[particle], outfile)
+		for hist in self.hists1d:
+			self.__save_hist_to_ascii(hist, outfile)
+		outfile.close()
+		return
 			
 if __name__ == '__main__':
 	from sys import argv
