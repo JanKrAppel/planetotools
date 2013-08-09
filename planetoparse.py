@@ -24,6 +24,14 @@ class histdata:
 			self.data = copyhist.data
 			self.particle = copyhist.particle
 			self.detector = copyhist.detector
+
+	def scale_per_nuc(self, weight):
+		"""Scale histogram to Energy/nuc. Pass the nucleus weight in amu."""
+		self.data[:,3] /= weight
+		self.data[:,4] /= weight
+		titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+		self.params['Xaxis'] = titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
+		return
 				
 class planetoparse:
 	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
