@@ -74,6 +74,7 @@ def combine_histograms(*args):
 		res = planetoparse()
 		for addthis in args:
 			res.primaries += addthis.primaries
+			#combine cosmogenic nuclides
 			if not res.cosmonuc is None:
 				res.cosmonuc.data[:,4] += addthis.cosmonuc.data[:,4]
 			else:
@@ -96,6 +97,12 @@ def combine_histograms(*args):
 						res.flux_down[particle][detector] = __combine_single_hists(res.flux_down[particle][detector], addthis.flux_down[particle][detector])
 					else:
 						res.flux_down[particle][detector] = addthis.flux_down[particle][detector]
+			#combine primary fluxes
+			for particle in addthis.primhists:
+				if not particle in res.primhists:
+					res.primhists[particle] = addthis.primhists[particle]
+				else:
+					res.primhists[particle] = __combine_single_hists(res.primhists[particle], addthis.primhists[particle])
 		return res
 	else:
 		return args[0]
@@ -110,6 +117,32 @@ def __combine_single_hists(hist1, hist2):
 		res.data[:,3] += hist2.data[:,3]
 		res.data[:,4] += hist2.data[:,4]
 		return res
+		
+def plot_primaries(results, *args, **kwargs):
+	"""Plot all primary particle fluxes in a result."""
+	for particle in results.primhists:
+		plot_1d_hist(results.primhists[particle], *args, **kwargs)
+	return
+	
+def plot_proton_alpha(results, detector, scale_per_nuc = True, *args, **kwargs):
+	"""Plot downward proton and alpha fluxes at the given detector."""
+	plot_1d_hist(results.flux_down['proton'][detector], *args, **kwargs)
+	if scale_per_nuc:
+		results.flux_down['alpha'][detector].scale_per_nuc(4)
+	plot_1d_hist(results.flux_down['alpha'][detector], *args, **kwargs)
+	return
+	
+def plot_neutrals(results, detector, *args, **kwargs):
+	"""Plot downward neutron and gamma fluxes at the given detector."""
+	plot_1d_hist(results.flux_down['neutron'][detector], *args, **kwargs)
+	plot_1d_hist(results.flux_down['gamma'][detector], *args, **kwargs)
+	return
+	
+def plot_proton_alpha_comparison(results, detector, scale_per_nuc = True, *args, **kwargs):
+	"""Plot primary, proton/alpha and neutral downward fluxes at detector."""
+	plot_primaries(results, *args, **kwargs)
+	plot_proton_alpha(results, detector, scale_per_nuc = scale_per_nuc, *args, **kwargs)
+	return
 			
 if __name__ == '__main__':
 	pass
