@@ -53,15 +53,22 @@ def plot_2d_hist(hist, *args, **kwargs):
 	else:
 		lw = kwargs['lw']
 		kwargs.pop('lw')
-	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = log10(hist.data[:,4]), s = 150, marker = 's', lw = 0)
+	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = log10(hist.data[:,4]), s = 150, marker = marker, lw = 0)
 	plt.xlabel(hist.params['Xaxis'])
 	plt.ylabel(hist.params['Yaxis'])
 	plt.xlim([0,25])
 	plt.xticks(arange(0, 26, 2))
 	plt.ylim([0,25])
 	plt.yticks(arange(0, 26, 2))
-	cbar=plt.colorbar()
+	fig = plt.gcf()
+	ax = fig.get_axes()
 	title, units = __parse_title(hist.params['Title'])
+	#remove colorbar, if already present
+	if len(ax) == 2:
+		if ax[0].get_title() == title and ax[1].get_title() == '':
+			fig.delaxes(ax[1])
+			fig.subplots_adjust()
+	cbar=plt.colorbar()
 	plt.title(title)
 	cbar.set_label('log ' + units)
 	plt.show()
