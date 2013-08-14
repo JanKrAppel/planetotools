@@ -142,6 +142,8 @@ def __combine_single_hists(hist1, hist2):
 def plot_primaries(results, *args, **kwargs):
 	"""Plot all primary particle fluxes in a result."""
 	for particle in results.primhists:
+		if particle == 'alpha':
+			results.primhists[particle].scale_per_nuc(4)
 		plot_1d_hist(results.primhists[particle], *args, **kwargs)
 	return
 	

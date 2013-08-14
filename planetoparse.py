@@ -32,7 +32,7 @@ class histdata:
 				self.data[i] += copyhist.data[i]
 			self.particle = '' + copyhist.particle
 			self.detector = 0 + copyhist.detector
-			self.nucweight = 0 + copyhist.nucweight
+			self.nuc_weight = 0 + copyhist.nuc_weight
 			if copyhist.scaled_per_nuc:
 				self.scaled_per_nuc = True
 
