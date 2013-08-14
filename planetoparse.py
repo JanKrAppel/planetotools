@@ -17,22 +17,52 @@ class histdata:
 		self.data = None
 		self.particle = ''
 		self.detector = -1
+		self.scaled_per_nuc = False
+		self.nuc_weight = 0
 		if not copyhist is None:
-			self.type = copyhist.type
-			self.title = copyhist.title
-			self.params = copyhist.params
-			self.data = copyhist.data
-			self.particle = copyhist.particle
-			self.detector = copyhist.detector
+			self.type = '' + copyhist.type
+			self.title = '' + copyhist.title
+			for param in copyhist.params:
+				if isinstance(copyhist.params[param], float64):	
+					self.params[param] = float64(0.) + copyhist.params[param]
+				else:
+					self.params[param] = '' + copyhist.params[param]
+			self.data = zeros(copyhist.data.shape)
+			for i in arange(0, len(copyhist.data), 1):
+				self.data[i] += copyhist.data[i]
+			self.particle = '' + copyhist.particle
+			self.detector = 0 + copyhist.detector
+			self.nucweight = 0 + copyhist.nucweight
+			if copyhist.scaled_per_nuc:
+				self.scaled_per_nuc = True
 
-	def scale_per_nuc(self, weight):
+	def scale_per_nuc(self, weight = None):
 		"""Scale histogram to Energy/nuc. Pass the nucleus weight in amu."""
-		self.data[:,3] /= weight
-		self.data[:,4] /= weight
-		titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
-		self.params['Xaxis'] = titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
-		return
-				
+		if weight is None and self.nuc_weight == 0:
+			return False
+		if not self.scaled_per_nuc:
+			if not weight is None:
+				self.nuc_weight = weight
+			self.data[:,3] /= self.nuc_weight
+			self.data[:,4] /= self.nuc_weight
+			titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+			self.params['Xaxis'] = titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
+			self.scaled_per_nuc = True
+			return True
+		else:
+			return False
+			
+	def unscale_per_nuc(self):
+		"""Remove energy scaling per nucleon from histogram."""
+		if self.scaled_per_nuc:
+			self.data[:,3] *= self.nuc_weight
+			self.data[:,4] *= self.nuc_weight
+			self.params['Xaxis'] = re.sub('/nuc', '', self.params['Xaxis'])
+			self.scaled_per_nuc = False
+			return True
+		else:
+			return False
+						
 class planetoparse:
 	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
 	

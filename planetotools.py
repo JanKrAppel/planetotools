@@ -3,7 +3,7 @@
 import re
 from numpy import *
 from matplotlib import pyplot as plt
-from planetoparse import planetoparse
+from planetoparse import planetoparse, histdata
 
 def __parse_title(title):
 	titleparse = re.match('(.*)\s*\[(.*)\]', title)
@@ -69,16 +69,30 @@ def plot_2d_hist(hist, *args, **kwargs):
 	
 def combine_histograms(*args):
 	"""Combines the different histograms for multiple planetoparse instances.
-	WARNING: Only the primaries count, cosmonuc 2D histograms, and up/down flux histograms are combined!"""
+	WARNING: Only the primaries count, cosmonuc 2D histograms, primary particle fluxes and up/down flux histograms are combined!"""
 	if len(args) > 1:
 		res = planetoparse()
 		for addthis in args:
+			#check and set normalisation
+			if not res.normalisation == '':
+				if not res.normalisation == addthis.normalisation:
+					print 'WARNING: Skipping result, different normalisation methods'
+					print '\t' + addthis.normalisation + ' vs. ' + res.normalisation + ' as expected'
+					continue
+			else:
+				res.normalisation += addthis.normalisation
+			#combine primary counts
 			res.primaries += addthis.primaries
+			#combine number of events counts
+			if 'nb_of_events' in res.params:
+				res.params['nb_of_events'] += addthis.params['nb_of_events']
+			else:
+				res.params['nb_of_events'] = float64(0.) + addthis.params['nb_of_events']
 			#combine cosmogenic nuclides
 			if not res.cosmonuc is None:
 				res.cosmonuc.data[:,4] += addthis.cosmonuc.data[:,4]
 			else:
-				res.cosmonuc = addthis.cosmonuc
+				res.cosmonuc = histdata(copyhist = addthis.cosmonuc)
 			#combine upward fluxes
 			for particle in addthis.flux_up:
 				for detector in addthis.flux_up[particle]:
@@ -87,7 +101,7 @@ def combine_histograms(*args):
 					if detector in res.flux_up[particle]:
 						res.flux_up[particle][detector] = __combine_single_hists(res.flux_up[particle][detector], addthis.flux_up[particle][detector])
 					else:
-						res.flux_up[particle][detector] = addthis.flux_up[particle][detector]
+						res.flux_up[particle][detector] = histdata(copyhist = addthis.flux_up[particle][detector])
 			#combine downward fluxes
 			for particle in addthis.flux_down:
 				for detector in addthis.flux_down[particle]:
@@ -96,11 +110,11 @@ def combine_histograms(*args):
 					if detector in res.flux_down[particle]:
 						res.flux_down[particle][detector] = __combine_single_hists(res.flux_down[particle][detector], addthis.flux_down[particle][detector])
 					else:
-						res.flux_down[particle][detector] = addthis.flux_down[particle][detector]
+						res.flux_down[particle][detector] = histdata(copyhist = addthis.flux_down[particle][detector])
 			#combine primary fluxes
 			for particle in addthis.primhists:
 				if not particle in res.primhists:
-					res.primhists[particle] = addthis.primhists[particle]
+					res.primhists[particle] = histdata(copyhist = addthis.primhists[particle])
 				else:
 					res.primhists[particle] = __combine_single_hists(res.primhists[particle], addthis.primhists[particle])
 		return res
