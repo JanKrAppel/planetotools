@@ -58,5 +58,6 @@ def plot_data_overview(mcddata, *args, **kwargs):
 	plot_dens_profile(mcddata, *args, **kwargs)
 	plt.subplot(224)
 	plot_comp_profile(mcddata, *args, **kwargs)
+	plt.suptitle('Data overview for ' + mcddata.params['filename'])
 	pass
 

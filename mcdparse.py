@@ -8,7 +8,6 @@ from MCDConfig import *
 from dateutil.parser import parse as parse_date
 import re
 
-
 class mcdparse:
 	"""Provides interactive access to MCD .cfg files for MCDToPlanetocosmics."""
 	def __init__(self, configfile = None, verbosity = 0):
@@ -173,6 +172,7 @@ class mcdparse:
 			self.params['dust_components'] = []
 			self.params['dust_component_ratios'] = {}
 			self.params['dust_density'] = 1.
+		self.params['filename'] = configfile
 		self.__params_loaded = True
 		return
 		
