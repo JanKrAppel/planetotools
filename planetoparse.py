@@ -19,6 +19,7 @@ class histdata:
 		self.detector = -1
 		self.scaled_per_nuc = False
 		self.nuc_weight = 0
+		self.scaled_per_sterad = False
 		if not copyhist is None:
 			self.type = '' + copyhist.type
 			self.title = '' + copyhist.title
@@ -35,6 +36,8 @@ class histdata:
 			self.nuc_weight = 0 + copyhist.nuc_weight
 			if copyhist.scaled_per_nuc:
 				self.scaled_per_nuc = True
+			if copyhist.scaled_per_sterad:
+				self.scaled_per_sterad = True
 
 	def scale_per_nuc(self, weight = None):
 		"""Scale histogram to Energy/nuc. Pass the nucleus weight in amu."""
@@ -63,10 +66,33 @@ class histdata:
 		else:
 			return False
 						
+	def scale_per_sterad(self):
+		"""Scale histogram to Energy/sr."""
+		if not self.scaled_per_sterad:
+			self.data[:,3] /= 2*pi
+			self.data[:,4] /= 2*pi
+			titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+			self.params['Xaxis'] = titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
+			self.scaled_per_sterad = True
+			return True
+		else:
+			return False
+			
+	def unscale_per_sterad(self):
+		"""Remove energy scaling per sr from histogram."""
+		if self.scaled_per_sterad:
+			self.data[:,3] *= 2*pi
+			self.data[:,4] *= 2*pi
+			self.params['Xaxis'] = re.sub('/sr', '', self.params['Xaxis'])
+			self.scaled_per_sterad = False
+			return True
+		else:
+			return False
+
 class planetoparse:
 	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
 	
-	def __init__(self, filename = None, print_stats = False):
+	def __init__(self, filename = None, verbosity = 0):
 		self.primaries = 0
 		self.normalisation = ''
 		self.params = {}
@@ -79,7 +105,7 @@ class planetoparse:
 		self.edep_atmo = []
 		self.primhists = {}
 		if not filename is None:
-			self.parse_file(filename, print_stats)
+			self.parse_file(filename, verbosity = verbosity)
 		return
 		
 	def __parse_params(self, line):
@@ -94,7 +120,7 @@ class planetoparse:
 		else:
 			return None, None
 		
-	def parse_file(self, filename, print_stats = False):
+	def parse_file(self, filename, verbosity = 0):
 		"""Parse a Planetocosmics ASCII output file. Set print_stats to True to get information on the parsing results."""
 		infile = open(filename, 'r')
 		line = infile.readline()
@@ -117,8 +143,15 @@ class planetoparse:
 			else:
 				infile, line = self.__parse_1d_hist(infile, line)
 		infile.close()
-		if print_stats:
+		#print additional output, depending on verbosity
+		if verbosity > 0:
+			print 'Successfully parsed file' + filename
+		if verbosity > 1:
 			self.print_stats()
+		if verbosity > 2:
+			self.print_empty()
+		if verbosity > 1:
+			print
 		return
 			
 	def print_stats(self):
@@ -141,6 +174,63 @@ class planetoparse:
 			print 'No downward flux histograms'
 		print 'Other 1D histograms:', len(self.hists1d)
 		return
+
+	def print_empty(self):
+		"""Print information on empty histograms, if any."""
+		def parse_title(hist):
+			if 'Title' in hist.params:
+				titleparse = re.match('(.*)\s*\[(.*)\]', hist.params['Title'])
+				res = titleparse.group(1)
+			else:
+				res = 'Unknown histogram title'
+			return res
+		message = ''
+		#cosmonuc:
+		if self.__histogram_2d_empty(self.cosmonuc):
+			message += '\tCosmogenic nuclides histogram\n'
+		#hists2d:
+		for hist in self.hists2d:
+			if self.__histogram_2d_empty(hist):
+				message += '\thists2d: ' + parse_title(hist) + '\n'
+		#edep_atmo:
+		for hist in self.edep_atmo:
+			if self.__histogram_1d_empty(hist):
+				message += '\tedep_atmo: ' + parse_title(hist) + '\n'
+		#edep_soil:
+		for hist in self.edep_soil:
+			if self.__histogram_1d_empty(hist):
+				message += '\tedep_soil: ' + parse_title(hist) + '\n'
+		#primaries:
+		for particle in self.primhists:
+			if self.__histogram_1d_empty(self.primhists[particle]):
+				message += '\tPrimary particle histograms, particle ' + particle + '\n'
+		#flux_down:
+		for particle in self.flux_down:
+			for detector in self.flux_down[particle]:
+				if self.__histogram_1d_empty(self.flux_down[particle][detector]):
+					message += '\tDownward flux histograms, particle ' + particle + ', detector ' + str(detector) + '\n'
+		#flux_up:
+		for particle in self.flux_up:
+			for detector in self.flux_up[particle]:
+				if self.__histogram_1d_empty(self.flux_down[particle][detector]):
+					message += '\tUpward flux histograms, particle ' + particle + ', detector ' + str(detector) + '\n'
+		#hists1d:
+		for hist in self.hists2d:
+			if self.__histogram_1d_empty(hist):
+				message += '\thists1d: ' + parse_title(hist) + '\n'
+		#finalize and print message:
+		if message == '':
+			message = 'No all-zero histograms detected.'
+		else:
+			message = 'The following all-zero histograms have been detected:\n' + message
+		print message
+		return
+
+	def __histogram_2d_empty(self, hist):
+		return (hist.data[:,4] == zeros(len(hist.data[:,4]))).all()
+
+	def __histogram_1d_empty(self, hist):
+		return (hist.data[:,3] == zeros(len(hist.data[:,3]))).all()
 
 	def __parse_hist(self, infile, line):
 		res = histdata()
