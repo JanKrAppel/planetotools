@@ -8,7 +8,26 @@ from planetoparse import planetoparse, histdata
 def __parse_title(title):
 	titleparse = re.match('(.*)\s*\[(.*)\]', title)
 	return titleparse.group(1), titleparse.group(2)	
-
+	
+def plot_edep_profile(hist, *args, **kwargs):
+	"""Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+	if not 'capsize' in kwargs:
+		capsize = 0
+	else:
+		capsize = kwargs['capsize']
+		kwargs.pop('capsize')
+	bin_width = hist.data[:,1] - hist.data[:,0]
+	plt.errorbar(hist.data[:,3] / bin_width, hist.data[:,2], xerr = hist.data[:,4] / bin_width, marker='.', capsize = capsize, *args, **kwargs)
+	title, units = __parse_title(hist.params['Title'])
+	plt.title(title)
+	plt.xlabel('Deposited energy / ' + units)
+	tmp, xunit = __parse_title(hist.params['Xaxis'])
+	plt.ylabel(tmp + ' / ' + xunit)
+	plt.xscale('log')
+	plt.ylim(amin(hist.data[:,2]), amax(hist.data[:,2]))
+	plt.show()
+	return
+	
 def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 	"""Plots 1D histograms. Pass the histogram as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
 	if not 'label' in kwargs:
