@@ -53,7 +53,7 @@ def plot_2d_hist(hist, *args, **kwargs):
 	else:
 		lw = kwargs['lw']
 		kwargs.pop('lw')
-	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = log10(hist.data[:,4]), s = s, marker = marker, lw = lw)
+	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = log10(hist.data[:,4]), s = s, marker = marker, lw = lw, *args, **kwargs)
 	plt.xlabel(hist.params['Xaxis'])
 	plt.ylabel(hist.params['Yaxis'])
 	plt.xlim([0,25])
