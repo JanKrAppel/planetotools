@@ -2,7 +2,7 @@
 
 from numpy import *
 from matplotlib import pyplot as plt
-from mcdparse import mcdparse
+from mcdparse import *
 
 def plot_temp_profile(mcddata, *args, **kwargs):
 	"""Plot a temperature profile for the given MCD data object."""
