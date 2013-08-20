@@ -47,6 +47,16 @@ def plot_comp_profile(mcddata, *args, **kwargs):
 	plt.title('Composition profile, ' + mcddata.get_coords_scenario_str())
 	return
 	
+def plot_shield_depth_profile(mcddata, *args, **kwargs):
+	"""Plot a shielding depth profile for the given MCD data object."""
+	plt.plot(mcddata.data['shield_depth'], mcddata.data['xz'], *args, **kwargs)
+	plt.xlabel('Shielding depth / g/cm^2')
+	plt.ylabel('Height / km')
+	plt.xscale('log')
+	plt.ylim(mcddata.params['surface_height'], mcddata.params['max_height'])
+	plt.title('Shielding depth profile, ' + mcddata.get_coords_scenario_str())
+	return
+	
 def plot_data_overview(mcddata, *args, **kwargs):
 	"""Plot a data overview for the given MCD data object.
 	This creates a subplot with temperature, pressure, density and composition profiles."""
@@ -57,7 +67,7 @@ def plot_data_overview(mcddata, *args, **kwargs):
 	plt.subplot(223)
 	plot_dens_profile(mcddata, *args, **kwargs)
 	plt.subplot(224)
-	plot_comp_profile(mcddata, *args, **kwargs)
+	plot_shield_depth_profile(mcddata, *args, **kwargs)
 	plt.suptitle('Data overview for ' + mcddata.params['filename'])
 	pass
 

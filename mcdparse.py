@@ -59,11 +59,23 @@ class mcdparse:
 		self.data['pres'] = dat_pres
 		self.data['dens'] = dat_dens
 		self.data['comp'] = dat_xz_comp
+		self.__build_shield_depth()
 		if verbosity > 0:
 			print 'Data successfully loaded.'
 		self.__data_loaded = True
 		return
 		
+	def __build_shield_depth(self):
+		res = []
+		for i in arange(0, len(self.data['xz']), 1):
+			if i == 0:
+				res.append(float64(0.))
+			else:
+				dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e5
+				res.append((self.data['dens'][i] * dh) + res[-1])
+		self.data['shield_depth'] = array(res, dtype = float64)
+		return
+			
 	def print_summary(self):
 		"""Print parameters summary message."""
 		if self.__params_loaded:
@@ -213,6 +225,17 @@ class atmoparse:
 			self.load_data(atmofile = atmofile, verbosity = verbosity)
 			return
 		return
+		
+	def __build_shield_depth(self):
+		res = []
+		for i in arange(0, len(self.data['xz']), 1):
+			if i == 0:
+				res.append(float64(0.))
+			else:
+				dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e5
+				res.append((self.data['dens'][i] * dh) + res[-1])
+		self.data['shield_depth'] = array(res, dtype = float64)
+		return
 			
 	def load_data(self, atmofile, verbosity = 0):
 		"""Builds the composition profile."""
@@ -306,6 +329,7 @@ class atmoparse:
 		self.data['pres'] = dat_pres
 		self.data['dens'] = dat_dens
 		self.data['comp'] = dat_xz_comp
+		self.__build_shield_depth()
 		self.__data_loaded = True
 		if verbosity > 0:
 			self.print_summary()
