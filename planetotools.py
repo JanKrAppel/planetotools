@@ -11,6 +11,9 @@ def __parse_title(title):
 	
 def plot_edep_profile(hist, *args, **kwargs):
 	"""Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+	if hist.isempty():
+		print 'WARNING: Unable to plot, histogram is all-zero.'
+		return
 	if not 'capsize' in kwargs:
 		capsize = 0
 	else:
@@ -30,6 +33,9 @@ def plot_edep_profile(hist, *args, **kwargs):
 	
 def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 	"""Plots 1D histograms. Pass the histogram as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+	if hist.isempty():
+		print 'WARNING: Unable to plot, histogram is all-zero.'
+		return
 	if not 'label' in kwargs:
 		label = hist.particle
 		if label_detector:
@@ -57,6 +63,9 @@ def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 	
 def plot_2d_hist(hist, *args, **kwargs):
 	"""Plots 2D histogram of cosmogenic nuclides. Pass the histogram as available through planetoparse to plot."""
+	if hist.isempty():
+		print 'WARNING: Unable to plot, histogram is all-zero.'
+		return
 	if not 's' in kwargs:
 		s = 150
 	else:
