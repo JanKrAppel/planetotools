@@ -114,7 +114,7 @@ class histdata:
 			def get_unit(title):
 				titleparse = re.match('(.*)\s*\[(.*)\]', title)
 				if not titleparse is None:
-					return titleparse.group(1)
+					return titleparse.group(2)
 				else:
 					return ''
 			eunit = get_unit(self.params['Xaxis'])
@@ -122,12 +122,12 @@ class histdata:
 			fluxunit = re.sub('nb particles', '#', fluxunit)
 			particle = re.sub('primary ', '', self.particle)
 			outfile = open(filename, 'w')
-			outfile.write('\definition\n')
-			outfile.write('\energy_unit{' + eunit + '}\n')
-			outfile.write('\flux_unit{' + fluxunit + '}\n')
-			outfile.write('\particle{' + particle + '}\n')
-			outfile.write('\interpolation{log}\n')
-			outfile.write('\data\n')
+			outfile.write('\\definition\n')
+			outfile.write('\\energy_unit{' + eunit + '}\n')
+			outfile.write('\\flux_unit{' + fluxunit + '}\n')
+			outfile.write('\\particle{' + particle + '}\n')
+			outfile.write('\\interpolation{log}\n')
+			outfile.write('\\data\n')
 			for i in arange(0, len(self.data), 1):
 				outfile.write(str(self.data[i, 2]) + '\t' + str(self.data[i, 3]) + '\n')
 			outfile.close()
