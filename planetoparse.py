@@ -7,6 +7,10 @@ import cPickle
 DELIMITER = '//////////////////////////////////////////////////\n'
 PARAMS_PATTERN = '(\w*)\s*:\s*(.*)\n'
 
+####################
+#histdata class definition
+####################
+
 class histdata:
 	"""Dummy class to provide histogram encapsulation"""
 	
@@ -104,6 +108,37 @@ class histdata:
 	def __histogram_1d_empty(self):
 		return (self.data[:,3] == zeros(len(self.data[:,3]))).all()
 
+	def save_as_flux(self, filename):
+		"""Save the histogram in a format that can be read in Planetocosmics for primary flux definition. Pass the output filename."""
+		if self.type == 'Histogram1D':
+			def get_unit(title):
+				titleparse = re.match('(.*)\s*\[(.*)\]', title)
+				if not titleparse is None:
+					return titleparse.group(2)
+				else:
+					return ''
+			eunit = get_unit(self.params['Xaxis'])
+			fluxunit = get_unit(self.params['Title'])
+			fluxunit = re.sub('nb particles', '#', fluxunit)
+			particle = re.sub('primary ', '', self.particle)
+			outfile = open(filename, 'w')
+			outfile.write('\\definition\n')
+			outfile.write('\\energy_unit{' + eunit + '}\n')
+			outfile.write('\\flux_unit{' + fluxunit + '}\n')
+			outfile.write('\\particle{' + particle + '}\n')
+			outfile.write('\\interpolation{log}\n')
+			outfile.write('\\data\n')
+			for i in arange(0, len(self.data), 1):
+				outfile.write(str(self.data[i, 2]) + '\t' + str(self.data[i, 3]) + '\n')
+			outfile.close()
+			return
+		else:
+			print 'ERROR: Can only save 1D histogram data as flux definition.'
+			return
+			
+####################
+#planetoparse class definition
+####################
 
 class planetoparse:
 	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
@@ -264,7 +299,7 @@ class planetoparse:
 			if dobreak:
 				break
 		tmpdat = []
-		while not line == DELIMITER and not line == '':
+		while not (line == DELIMITER or line == ''):
 			tmpdat.append(array(line.split(), dtype = float64))
 			line = infile.readline()
 		res.data = array(tmpdat)
