@@ -48,13 +48,21 @@ def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 	else:
 		capsize = kwargs['capsize']
 		kwargs.pop('capsize')
+	scale_by_width = True
 	bin_width = hist.data[:,1] - hist.data[:,0]
+	if (bin_width == 0.).all():
+		print 'WARNING: Unable to scale by bin width'
+		scale_by_width = False
+		bin_width = ones(len(bin_width))
 	plt.errorbar(hist.data[:,2], hist.data[:,3] / bin_width, xerr = bin_width / 2, yerr = hist.data[:,4] / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
 	title, units = __parse_title(hist.params['Title'])
 	plt.title(title)
 	plt.xlabel(hist.params['Xaxis'])
 	tmp, yunit = __parse_title(hist.params['Xaxis'])
-	plt.ylabel(units + '/' + yunit)
+	if scale_by_width:
+		plt.ylabel(units + '/' + yunit)
+	else:
+		plt.ylabel(units)
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.legend()

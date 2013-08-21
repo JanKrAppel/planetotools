@@ -136,6 +136,52 @@ class histdata:
 			print 'ERROR: Can only save 1D histogram data as flux definition.'
 			return
 			
+	def __parse_params(self, line):
+		parsed = re.match('\\\\(\w.*)\{(.*)\}', line)
+		if parsed:
+			name = parsed.group(1)
+			try:
+				value = float64(parsed.group(2))
+			except ValueError:
+				value = parsed.group(2)
+			return name, value
+		else:
+			return None, None
+
+	def load_from_flux(self, filename):
+		"""Load the histogram data from a file containing Planetocosmics primary flux definitions."""
+		infile = open(filename, 'r')
+		line = infile.readline()
+		tmpparams = {}
+		tmpdata = []
+		while not line == '':
+			if '\\definition' in line:
+				line = infile.readline()
+				while not '\\data' in line:
+					name, value = self.__parse_params(line)
+					if not name is None:
+						tmpparams[name] = value
+					line = infile.readline()
+			elif '\\data' in line:
+					line = infile.readline()
+					while not line[:-1] == '':
+						tmpdata.append(array(line.split(), dtype = float64))
+						line = infile.readline()
+					tmpdata = array(tmpdata)
+		infile.close()
+		#set type, particle and title
+		self.type = 'Histogram1D'
+		self.title = '/PRIMARY/' + tmpparams['particle'] + '/1'
+		self.particle = 'primary ' + tmpparams['particle']
+		#set other params
+		self.params['Title'] = 'Primary flux of ' + tmpparams['particle'] + ' [' + re.sub('#', 'nb particles', tmpparams['flux_unit']) + ']'
+		self.params['Xaxis'] = 'Energy[' + tmpparams['energy_unit'] + ']'
+		self.params['filename'] = filename
+		self.params['interpolation'] = tmpparams['interpolation']
+		zerocol = zeros(len(tmpdata))
+		self.data = column_stack((zerocol, zerocol, tmpdata, zerocol))
+		return
+			
 ####################
 #planetoparse class definition
 ####################
