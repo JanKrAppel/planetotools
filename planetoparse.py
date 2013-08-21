@@ -209,21 +209,32 @@ class planetoparse:
 		"""Print information on the number of histograms available."""
 		print 'Number of primaries:', self.primaries
 		print 'Normalisation:', self.normalisation
+		count = 0
 		if not self.cosmonuc is None:
 			print 'Cosmogenic nuclide histogram present'
+			count += 1
 		print 'Other 2D histograms:', len(self.hists2d)
+		count += len(self.hists2d)
 		print 'Primaries histograms:', len(self.primhists)
+		count += len(self.primhists)
 		print 'Atmosphere energy deposition histograms:', len(self.edep_atmo)
+		count += len(self.edep_atmo)
 		print 'Soil energy deposition histograms:', len(self.edep_soil)
+		count += len(self.edep_soil)
 		if not len(self.flux_up) == 0:
 			print 'Upward flux histograms:', len(self.flux_up)*len(self.flux_up[self.flux_up.keys()[0]])
+			count += len(self.flux_up)*len(self.flux_up[self.flux_up.keys()[0]])
 		else:
 			print 'No upward flux histograms'
 		if not len(self.flux_down) == 0:
-			print 'Downward flux histograms:', len(self.flux_down)*len(self.flux_down[self.flux_up.keys()[0]])
+			print 'Downward flux histograms:', len(self.flux_down)*len(self.flux_down[self.flux_down.keys()[0]])
+			count += len(self.flux_down)*len(self.flux_down[self.flux_down.keys()[0]])
 		else:
 			print 'No downward flux histograms'
 		print 'Other 1D histograms:', len(self.hists1d)
+		count += len(self.hists1d)
+		print
+		print 'Total:', count, 'histograms'
 		return
 
 	def print_empty(self):
@@ -236,44 +247,54 @@ class planetoparse:
 				res = 'Unknown histogram title'
 			return res
 		message = ''
+		count = 0
 		#cosmonuc:
 		if self.cosmonuc.isempty():
 			message += '\tCosmogenic nuclides histogram\n'
+			count += 1
 		#hists2d:
 		for hist in self.hists2d:
 			if hist.isempty():
 				message += '\thists2d: ' + parse_title(hist) + '\n'
+				count += 1
 		#edep_atmo:
 		for hist in self.edep_atmo:
 			if hist.isempty():
 				message += '\tedep_atmo: ' + parse_title(hist) + '\n'
+				count += 1
 		#edep_soil:
 		for hist in self.edep_soil:
 			if hist.isempty():
 				message += '\tedep_soil: ' + parse_title(hist) + '\n'
+				count += 1
 		#primaries:
 		for particle in self.primhists:
 			if self.primhists[particle].isempty():
 				message += '\tPrimary particle histograms, particle ' + particle + '\n'
+				count += 1
 		#flux_down:
 		for particle in self.flux_down:
 			for detector in self.flux_down[particle]:
 				if self.flux_down[particle][detector].isempty():
 					message += '\tDownward flux histograms, particle ' + particle + ', detector ' + str(detector) + '\n'
+					count += 1
 		#flux_up:
 		for particle in self.flux_up:
 			for detector in self.flux_up[particle]:
 				if self.flux_down[particle][detector].isempty():
 					message += '\tUpward flux histograms, particle ' + particle + ', detector ' + str(detector) + '\n'
+					count += 1
 		#hists1d:
 		for hist in self.hists2d:
 			if hist.isempty():
 				message += '\thists1d: ' + parse_title(hist) + '\n'
+				count += 1
 		#finalize and print message:
 		if message == '':
 			message = 'No all-zero histograms detected.'
 		else:
 			message = 'The following all-zero histograms have been detected:\n' + message
+			message += '\nTotal count: ' + str(count)
 		print message
 		return
 
