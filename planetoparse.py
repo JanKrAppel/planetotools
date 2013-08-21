@@ -301,7 +301,7 @@ class planetoparse:
 		tmpdat = []
 		while not (line == DELIMITER or line == ''):
 			tmpdat.append(array(line.split(), dtype = float64))
-			line = infile.readline()
+			line = infile.readline()[:-1]
 		res.data = array(tmpdat)
 		return res, infile, line		
 
