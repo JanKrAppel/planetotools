@@ -194,6 +194,24 @@ def plot_proton_alpha_comparison(results, detector, scale_per_nuc = True, *args,
 	plot_primaries(results, *args, **kwargs)
 	plot_proton_alpha(results, detector, scale_per_nuc = scale_per_nuc, *args, **kwargs)
 	return
+	
+def plot_cosmonuc_comparison(results1, results2, label1 = None, label2 = None, legend = True, *args, **kwargs):
+	"""Plot a comparison of two cosmogenic nuclide histograms."""
+	for entry in ['label', 'lw', 's', 'marker', 'edgecolor', 'legend']:
+		if entry in kwargs:
+			kwargs.pop(entry)
+	if label1 is None:
+		plot_2d_hist(results1.cosmonuc, *args, **kwargs)
+	else:
+		plot_2d_hist(results1.cosmonuc, label = label1, *args, **kwargs)
+	if label2 is None:
+		plot_2d_hist(results2.cosmonuc, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
+	else:
+		plot_2d_hist(results2.cosmonuc, label = label2, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
+	if legend:
+		plt.legend(loc = 'upper left')
+	plt.title('Comparison of cosmogenic nuclide production')
+	return
 			
 if __name__ == '__main__':
 	pass
