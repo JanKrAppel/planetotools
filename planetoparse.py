@@ -136,6 +136,11 @@ class histdata:
 			print 'ERROR: Can only save 1D histogram data as flux definition.'
 			return
 			
+	def save_data(self, filename):
+		"""Save only the data array to disk."""
+		savetxt(filename, self.data)
+		return
+			
 	def __parse_params(self, line):
 		parsed = re.match('\\\\(\w.*)\{(.*)\}', line)
 		if parsed:
@@ -478,7 +483,4 @@ class planetoparse:
 			self.__save_hist_to_ascii(hist, outfile)
 		outfile.close()
 		return
-			
-if __name__ == '__main__':
-	from sys import argv
-	results = planetoparse(argv[1], print_stats = True)
+

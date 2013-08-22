@@ -62,6 +62,7 @@ class mcdparse:
 		self.__build_shield_depth()
 		if verbosity > 0:
 			print 'Data successfully loaded.'
+			print
 		self.__data_loaded = True
 		return
 		
@@ -182,7 +183,7 @@ class mcdparse:
 					new_dust_component_ratios[comp] = float64(ratio)
 			self.params['dust_components'] = new_dust_components	
 			self.params['dust_component_ratios'] = new_dust_component_ratios
-			if not 'dust_density' in params:
+			if not 'dust_density' in self.params:
 				print 'WARNING: No dust density specified, defaulting to 1.1 kg/m^3'
 				self.params['dust_density'] = 1.1
 		else:
@@ -334,6 +335,7 @@ class atmoparse:
 		if verbosity > 0:
 			self.print_summary()
 			print 'Data successfully loaded.'
+			print
 		return
 						
 	def __parse_params(self, line, pattern):

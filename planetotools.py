@@ -69,6 +69,35 @@ def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 	plt.show()
 	return
 	
+def plot_array_hist(array, *args, **kwargs):
+	"""Plots 1D histograms from numpy arrays. Additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+	if not 'capsize' in kwargs:
+		capsize = 0
+	else:
+		capsize = kwargs['capsize']
+		kwargs.pop('capsize')
+	#errors are included:
+	if array.shape[1] == 5:
+		scale_by_width = True
+		bin_width = array[:,1] - array[:,0]
+		if (bin_width == 0.).all():
+			print 'WARNING: Unable to scale by bin width'
+			scale_by_width = False
+			bin_width = ones(len(bin_width))
+		plt.errorbar(array[:,2], array[:,3] / bin_width, xerr = bin_width / 2, yerr = array[:,4] / bin_width, marker='.', capsize = capsize, *args, **kwargs)
+	#errors are not included, neither are binwidths:
+	elif array.shape[1] == 2:
+		plt.plot(array[:,0], array[:,1], *args, **kwargs)
+	plt.xscale('log')
+	plt.yscale('log')
+	plt.show()
+	return
+	
+def scale_array_per_nuc(array, weight):
+	array[:,3] /= weight
+	array[:,4] /= weight
+	return
+
 def plot_2d_hist(hist, *args, **kwargs):
 	"""Plots 2D histogram of cosmogenic nuclides. Pass the histogram as available through planetoparse to plot."""
 	if hist.isempty():

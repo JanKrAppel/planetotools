@@ -33,11 +33,19 @@ def plot_dens_profile(mcddata, *args, **kwargs):
 	plt.title('Density profile, ' + mcddata.get_coords_scenario_str())
 	return
 
-def plot_comp_profile(mcddata, *args, **kwargs):
+def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, *args, **kwargs):
 	"""Plot a composition profile for the given MCD data object."""
 	if 'label' in kwargs:
 		kwargs.pop('label')
-	for component in mcddata.data['comp']:
+	if not plot_only is None:
+		components = plot_only
+	else:
+		components = mcddata.data['comp'].keys()
+	if not dont_plot is None:
+		for component in dont_plot:
+			if component in components:
+				components.remove(component)
+	for component in components:
 		plt.plot(mcddata.data['comp'][component], mcddata.data['xz'], label = component, *args, **kwargs)
 	plt.legend(loc = 'lower left')
 	plt.xlabel('Volume mixing ratio')
@@ -57,7 +65,7 @@ def plot_shield_depth_profile(mcddata, *args, **kwargs):
 	plt.title('Shielding depth profile, ' + mcddata.get_coords_scenario_str())
 	return
 	
-def plot_data_overview(mcddata, *args, **kwargs):
+def plot_data_overview(mcddata, title = False, *args, **kwargs):
 	"""Plot a data overview for the given MCD data object.
 	This creates a subplot with temperature, pressure, density and composition profiles."""
 	plt.subplot(221)
@@ -68,6 +76,7 @@ def plot_data_overview(mcddata, *args, **kwargs):
 	plot_dens_profile(mcddata, *args, **kwargs)
 	plt.subplot(224)
 	plot_shield_depth_profile(mcddata, *args, **kwargs)
-	plt.suptitle('Data overview for ' + mcddata.params['filename'])
+	if title:
+		plt.suptitle('Data overview for ' + mcddata.params['filename'])
 	pass
 
