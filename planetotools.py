@@ -94,8 +94,8 @@ def plot_array_hist(array, *args, **kwargs):
 	return
 	
 def scale_array_per_nuc(array, weight):
-	array[:,3] /= weight
-	array[:,4] /= weight
+	array[:,:3] /= weight
+	array[:,3:] *= weight
 	return
 
 def plot_2d_hist(hist, *args, **kwargs):
