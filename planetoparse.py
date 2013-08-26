@@ -183,8 +183,16 @@ class histdata:
 		self.params['Xaxis'] = 'Energy[' + tmpparams['energy_unit'] + ']'
 		self.params['filename'] = filename
 		self.params['interpolation'] = tmpparams['interpolation']
+		#set data
 		zerocol = zeros(len(tmpdata))
 		self.data = column_stack((zerocol, zerocol, tmpdata, zerocol))
+		for i in arange(0, len(self.data), 1):
+			if i == 0:
+				bin_width = self.data[1, 2] - self.data[0, 2]
+			else:
+				bin_width = self.data[i, 2] - self.data[i - 1, 2]
+			self.data[i, 0] = self.data[i, 2] - bin_width / 2
+			self.data[i, 1] = self.data[i, 2] + bin_width / 2
 		return
 			
 ####################
