@@ -12,7 +12,7 @@ PARAMS_PATTERN = '(\w*)\s*:\s*(.*)\n'
 ####################
 
 class histdata:
-	"""Dummy class to provide histogram encapsulation"""
+	"""Provides histogram data to plotting routines. Allows scaling and unscaling per nucleus and per sterad, as well as saving and loading to and from Planetocosmics flux data definition files."""
 	
 	def __init__(self, copyhist = None):
 		self.type = None

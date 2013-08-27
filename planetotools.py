@@ -94,6 +94,8 @@ def plot_array_hist(array, *args, **kwargs):
 	return
 	
 def scale_array_per_nuc(array, weight):
+	"""Scales an array that contains Planetocosmics result data per nucleus. Requires the following columns:
+	1. lower bin edge 2. upper bin edge 3. bin middle 4. bin height 5. bin error"""
 	array[:,:3] /= weight
 	array[:,3:] *= weight
 	return
