@@ -492,3 +492,65 @@ class planetoparse:
 		outfile.close()
 		return
 
+	def set_scale_per_nuc(self, scale, particle, weight = None):
+		"""Sets (scale = True) or unsets (scale = False) per nucleus scaling for all flux histograms of a given particle."""
+		count = 0
+		if scale and weight is None:
+			print 'ERROR: Need particle weight for scaling.'
+			return
+		if particle in self.primhists:
+			if scale:
+				self.primhists[particle].scale_per_nuc(weight)
+			else:
+				self.primhists[particle].unscale_per_nuc()
+			count += 1
+		if particle in self.flux_up:
+			for detector in self.flux_up[particle]:
+				if scale:
+					self.flux_up[particle][detector].scale_per_nuc(weight)
+				else:
+					self.flux_up[particle][detector].unscale_per_nuc()
+				count += 1
+		if particle in self.flux_down:
+			for detector in self.flux_down[particle]:
+				if scale:
+					self.flux_down[particle][detector].scale_per_nuc(weight)
+				else:
+					self.flux_down[particle][detector].unscale_per_nuc()
+				count += 1
+		if scale:
+			print 'Scaled', count, particle, 'flux histograms with weight', weight
+		else:
+			print 'Unscaled', count, particle, 'flux histograms'
+		return
+			
+		
+	def set_scale_per_sterad(self, scale):
+		"""Sets (scale = True) or unsets (scale = False) per steradian scaling for all flux histograms."""
+		count = 0
+		for particle in self.primhists:
+			if scale:
+				self.primhists[particle].scale_per_sterad()
+			else:
+				self.primhists[particle].unscale_per_sterad()
+			count += 1
+		for particle in self.flux_up:
+			for detector in self.flux_up[particle]:
+				if scale:
+					self.flux_up[particle][detector].scale_per_sterad()
+				else:
+					self.flux_up[particle][detector].unscale_per_sterad()
+				count += 1
+		for particle in self.flux_down:
+			for detector in self.flux_down[particle]:
+				if scale:
+					self.flux_down[particle][detector].scale_per_sterad()
+				else:
+					self.flux_down[particle][detector].unscale_per_sterad()
+				count += 1
+		if scale:
+			print 'Scaled', count, 'flux histograms'
+		else:
+			print 'Unscaled', count, 'flux histograms'
+		return
+
