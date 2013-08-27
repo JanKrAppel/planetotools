@@ -31,7 +31,7 @@ def plot_edep_profile(hist, *args, **kwargs):
 	plt.show()
 	return
 	
-def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
+def plot_1d_hist(hist, scale_by = 1., label_detector = False, *args, **kwargs):
 	"""Plots 1D histograms. Pass the histogram as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
 	if hist.isempty():
 		print 'WARNING: Unable to plot, histogram is all-zero.'
@@ -54,7 +54,7 @@ def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 		print 'WARNING: Unable to scale by bin width'
 		scale_by_width = False
 		bin_width = ones(len(bin_width))
-	plt.errorbar(hist.data[:,2], hist.data[:,3] / bin_width, xerr = bin_width / 2, yerr = hist.data[:,4] / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
+	plt.errorbar(hist.data[:,2], hist.data[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = hist.data[:,4] * scale_by / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
 	title, units = __parse_title(hist.params['Title'])
 	plt.title(title)
 	plt.xlabel(hist.params['Xaxis'])
@@ -66,10 +66,10 @@ def plot_1d_hist(hist, label_detector = False, *args, **kwargs):
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.legend()
-	plt.show()
+	plt.show(block = False)
 	return
 	
-def plot_array_hist(array, *args, **kwargs):
+def plot_array_hist(array, scale_by = 1., *args, **kwargs):
 	"""Plots 1D histograms from numpy arrays. Additional arguments are passed to the Matplotlib plotting function (errorbar)."""
 	if not 'capsize' in kwargs:
 		capsize = 0
@@ -84,13 +84,13 @@ def plot_array_hist(array, *args, **kwargs):
 			print 'WARNING: Unable to scale by bin width'
 			scale_by_width = False
 			bin_width = ones(len(bin_width))
-		plt.errorbar(array[:,2], array[:,3] / bin_width, xerr = bin_width / 2, yerr = array[:,4] / bin_width, marker='.', capsize = capsize, *args, **kwargs)
+		plt.errorbar(array[:,2], array[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = array[:,4] * scale_by / bin_width, marker='.', capsize = capsize, *args, **kwargs)
 	#errors are not included, neither are binwidths:
 	elif array.shape[1] == 2:
 		plt.plot(array[:,0], array[:,1], *args, **kwargs)
 	plt.xscale('log')
 	plt.yscale('log')
-	plt.show()
+	plt.show(block = False)
 	return
 	
 def scale_array_per_nuc(array, weight):
@@ -138,7 +138,7 @@ def plot_2d_hist(hist, *args, **kwargs):
 	cbar=plt.colorbar()
 	plt.title(title)
 	cbar.set_label('log ' + units)
-	plt.show()
+	plt.show(block = False)
 	return
 	
 def combine_histograms(*args):
