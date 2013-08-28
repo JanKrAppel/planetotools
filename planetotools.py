@@ -13,7 +13,11 @@ def __parse_title(title):
 		return titleparse.group(1), titleparse.group(2)
 		
 def __get_units_from_label(label):
-	return label.split(' / ')[1]
+	res = label.split(' / ')
+	if len(res) == 1:
+		return res[0]
+	else:
+		return res[1]
 
 ENERGY_UNITS = ['MeV', 'keV', 'GeV']	
 AREA_UNITS = ['cm2', 'm2', 'km2']
@@ -53,6 +57,15 @@ def __get_current_xy_labels():
 	fig = plt.gcf()
 	ax = fig.gca()
 	return ax.get_xlabel(), ax.get_ylabel()
+	
+def __check_xy_units(xunits, yunits):
+	cur_xunits, cur_yunits = __get_current_xy_labels()
+	if not (cur_xunits == '' or cur_yunits == ''):
+		cur_xunits = __get_units_from_label(cur_xunits)
+		cur_yunits = __get_units_from_label(cur_yunits)
+		if not (xunits == cur_xunits and yunits == cur_yunits):
+			print 'WARNING: Units mismatch in current plot'
+	return
 		
 def plot_edep_profile(hist, *args, **kwargs):
 	"""Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
@@ -68,12 +81,7 @@ def plot_edep_profile(hist, *args, **kwargs):
 	plt.errorbar(hist.data[:,3] / bin_width, hist.data[:,2], xerr = hist.data[:,4] / bin_width, marker='.', capsize = capsize, *args, **kwargs)
 	title, xunits = __parse_title(hist.params['Title'])
 	ylabel, yunits = __parse_title(hist.params['Xaxis'])
-	cur_xunits, cur_yunits = __get_current_xy_labels()
-	if not (cur_xunits == '' or cur_yunits == ''):
-		cur_xunits = __get_units_from_label(cur_xunits)
-		cur_yunits = __get_units_from_label(cur_yunits)
-		if not (xunits == cur_xunits and yunits == cur_yunits):
-			print 'WARNING: Units mismatch in current plot'
+	__check_xy_units(xunits, yunits)
 	plt.title(title)
 	plt.xlabel('Deposited energy / ' + xunits)
 	plt.ylabel(ylabel + ' / ' + yunits)
@@ -114,11 +122,7 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, *args, **kwargs):
 		yunits = __normalize_units(units + '/' + xunits)
 	else:
 		yunits = __normalize_units(units)
-	cur_xunits, cur_yunits = __get_current_xy_labels()
-	if not (cur_xunits == '' or cur_yunits == ''):
-		cur_xunits = __get_units_from_label(cur_xunits)
-		if not (xunits == cur_xunits and yunits == cur_yunits):
-			print 'WARNING: Units mismatch in current plot'
+	__check_xy_units(xunits, yunits)
 	plt.xlabel(xlabel + ' / ' + xunits)
 	plt.ylabel(yunits)
 	plt.xscale('log')
