@@ -115,7 +115,7 @@ def plot_edep_profile(hist, *args, **kwargs):
 	plt.show(block = False)
 	return
 	
-def plot_1d_hist(hist, scale_by = 1., label_detector = False, *args, **kwargs):
+def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = True, *args, **kwargs):
 	"""Plots 1D histograms. Pass the histogram as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
 	if hist.isempty():
 		print 'WARNING: Unable to plot, histogram is all-zero.'
@@ -132,12 +132,14 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, *args, **kwargs):
 	else:
 		capsize = kwargs['capsize']
 		kwargs.pop('capsize')
-	scale_by_width = True
-	bin_width = hist.data[:,1] - hist.data[:,0]
-	if (bin_width == 0.).all():
-		print 'WARNING: Unable to scale by bin width'
-		scale_by_width = False
-		bin_width = ones(len(bin_width))
+	if scale_by_width:
+		bin_width = hist.data[:,1] - hist.data[:,0]
+		if (bin_width == 0.).all():
+			print 'WARNING: Unable to scale by bin width'
+			scale_by_width = False
+			bin_width = ones(len(bin_width))
+	else:
+		bin_width = ones(len(hist.data))
 	plt.errorbar(hist.data[:,2], hist.data[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = hist.data[:,4] * scale_by / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
 	title, units = __parse_title(hist.params['Title'])
 	plt.title(title)

@@ -390,7 +390,7 @@ class planetoparse:
 		if res.title.split('/')[1] == 'COSMONUC':
 			self.cosmonuc = res
 		else:
-			self.hist2d.append(res)
+			self.hists2d.append(res)
 		return infile, line
 		
 	def __parse_1d_hist(self, infile, line):
