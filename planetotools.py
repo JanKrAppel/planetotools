@@ -7,8 +7,53 @@ from planetoparse import planetoparse, histdata
 
 def __parse_title(title):
 	titleparse = re.match('(.*)\s*\[(.*)\]', title)
-	return titleparse.group(1), titleparse.group(2)	
+	if titleparse is None:
+		return None, title
+	else:
+		return titleparse.group(1), titleparse.group(2)
+		
+def __get_units_from_label(label):
+	return label.split(' / ')[1]
+
+ENERGY_UNITS = ['MeV', 'keV', 'GeV']	
+AREA_UNITS = ['cm2', 'm2', 'km2']
+TIME_UNITS = ['h', 'm', 's']
+COUNT_UNITS = ['nb particles']
+ANGLE_UNITS = ['sr']
+WEIGHT_UNITS = ['nuc']
+UNIT_ORDER = ['count', 'area', 'time', 'angle', 'energy', 'weight']
+UNIT_REPLACE = {'nb particles': 'particles'}
+
+def __normalize_units(units):
+	units = units.split('/')
+	unitsort = {}
+	unitsort['main'] = units.pop(0)
+	for unit in units:
+		if unit in ENERGY_UNITS:
+			unitsort['energy'] = unit
+		elif unit in AREA_UNITS:
+			unitsort['area'] = unit
+		elif unit in TIME_UNITS:
+			unitsort['time'] = unit
+		elif unit in COUNT_UNITS:
+			unitsort['count'] = unit
+		elif unit in ANGLE_UNITS:
+			unitsort['angle'] = unit
+		elif unit in WEIGHT_UNITS:
+			unitsort['weight'] = unit
+	res = unitsort['main']
+	for unit in UNIT_ORDER:
+		if unit in unitsort:
+			res += '/' + unitsort[unit]
+	for string in UNIT_REPLACE:
+		res = re.sub(string, UNIT_REPLACE[string], res)
+	return res
 	
+def __get_current_xy_labels():
+	fig = plt.gcf()
+	ax = fig.gca()
+	return ax.get_xlabel(), ax.get_ylabel()
+		
 def plot_edep_profile(hist, *args, **kwargs):
 	"""Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
 	if hist.isempty():
@@ -21,11 +66,17 @@ def plot_edep_profile(hist, *args, **kwargs):
 		kwargs.pop('capsize')
 	bin_width = hist.data[:,1] - hist.data[:,0]
 	plt.errorbar(hist.data[:,3] / bin_width, hist.data[:,2], xerr = hist.data[:,4] / bin_width, marker='.', capsize = capsize, *args, **kwargs)
-	title, units = __parse_title(hist.params['Title'])
+	title, xunits = __parse_title(hist.params['Title'])
+	ylabel, yunits = __parse_title(hist.params['Xaxis'])
+	cur_xunits, cur_yunits = __get_current_xy_labels()
+	if not (cur_xunits == '' or cur_yunits == ''):
+		cur_xunits = __get_units_from_label(cur_xunits)
+		cur_yunits = __get_units_from_label(cur_yunits)
+		if not (xunits == cur_xunits and yunits == cur_yunits):
+			print 'WARNING: Units mismatch in current plot'
 	plt.title(title)
-	plt.xlabel('Deposited energy / ' + units)
-	tmp, xunit = __parse_title(hist.params['Xaxis'])
-	plt.ylabel(tmp + ' / ' + xunit)
+	plt.xlabel('Deposited energy / ' + xunits)
+	plt.ylabel(ylabel + ' / ' + yunits)
 	plt.xscale('log')
 	plt.ylim(amin(hist.data[:,2]), amax(hist.data[:,2]))
 	plt.show()
@@ -57,12 +108,19 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, *args, **kwargs):
 	plt.errorbar(hist.data[:,2], hist.data[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = hist.data[:,4] * scale_by / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
 	title, units = __parse_title(hist.params['Title'])
 	plt.title(title)
-	plt.xlabel(hist.params['Xaxis'])
-	tmp, yunit = __parse_title(hist.params['Xaxis'])
+	xlabel, xunits = __parse_title(hist.params['Xaxis'])
+	xunits = __normalize_units(xunits)
 	if scale_by_width:
-		plt.ylabel(units + '/' + yunit)
+		yunits = __normalize_units(units + '/' + xunits)
 	else:
-		plt.ylabel(units)
+		yunits = __normalize_units(units)
+	cur_xunits, cur_yunits = __get_current_xy_labels()
+	if not (cur_xunits == '' or cur_yunits == ''):
+		cur_xunits = __get_units_from_label(cur_xunits)
+		if not (xunits == cur_xunits and yunits == cur_yunits):
+			print 'WARNING: Units mismatch in current plot'
+	plt.xlabel(xlabel + ' / ' + xunits)
+	plt.ylabel(yunits)
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.legend()
