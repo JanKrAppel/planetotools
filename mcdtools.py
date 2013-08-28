@@ -5,6 +5,9 @@ from matplotlib import pyplot as plt
 from mcdparse import *
 from planetotools import __check_xy_units
 
+if not plt.isinteractive():
+	plt.ion()
+
 def plot_temp_profile(mcddata, *args, **kwargs):
 	"""Plot a temperature profile for the given MCD data object."""
 	plt.plot(mcddata.data['temp'], mcddata.data['xz'], *args, **kwargs)
