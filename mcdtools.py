@@ -13,6 +13,7 @@ def plot_temp_profile(mcddata, *args, **kwargs):
 	plt.ylabel('Height / km')
 	plt.ylim(mcddata.params['surface_height'], mcddata.params['max_height'])
 	plt.title('Temperature profile, ' + mcddata.get_coords_scenario_str())
+	plt.show(block = False)
 	return
 	
 def plot_pres_profile(mcddata, *args, **kwargs):
@@ -24,6 +25,7 @@ def plot_pres_profile(mcddata, *args, **kwargs):
 	plt.xscale('log')
 	plt.ylim(mcddata.params['surface_height'], mcddata.params['max_height'])
 	plt.title('Pressure profile, ' + mcddata.get_coords_scenario_str())
+	plt.show(block = False)
 	return
 		
 def plot_dens_profile(mcddata, *args, **kwargs):
@@ -35,6 +37,7 @@ def plot_dens_profile(mcddata, *args, **kwargs):
 	plt.xscale('log')
 	plt.ylim(mcddata.params['surface_height'], mcddata.params['max_height'])
 	plt.title('Density profile, ' + mcddata.get_coords_scenario_str())
+	plt.show(block = False)
 	return
 
 def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, *args, **kwargs):
@@ -58,6 +61,7 @@ def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, *args, **kwar
 	plt.xscale('log')
 	plt.ylim(mcddata.params['surface_height'], mcddata.params['max_height'])
 	plt.title('Composition profile, ' + mcddata.get_coords_scenario_str())
+	plt.show(block = False)
 	return
 	
 def plot_shield_depth_profile(mcddata, *args, **kwargs):
@@ -68,6 +72,7 @@ def plot_shield_depth_profile(mcddata, *args, **kwargs):
 	plt.xscale('log')
 	plt.ylim(mcddata.params['surface_height'], mcddata.params['max_height'])
 	plt.title('Shielding depth profile, ' + mcddata.get_coords_scenario_str())
+	plt.show(block = False)
 	return
 	
 def plot_data_overview(mcddata, title = False, *args, **kwargs):

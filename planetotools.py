@@ -5,6 +5,9 @@ from numpy import *
 from matplotlib import pyplot as plt
 from planetoparse import planetoparse, histdata
 
+if not plt.isinteractive():
+	plt.ion()
+
 def __parse_title(title):
 	titleparse = re.match('(.*)\s*\[(.*)\]', title)
 	if titleparse is None:
@@ -109,7 +112,7 @@ def plot_edep_profile(hist, *args, **kwargs):
 	plt.ylabel(ylabel + ' / ' + yunits)
 	plt.xscale('log')
 	plt.ylim(amin(hist.data[:,2]), amax(hist.data[:,2]))
-	plt.show()
+	plt.show(block = False)
 	return
 	
 def plot_1d_hist(hist, scale_by = 1., label_detector = False, *args, **kwargs):
@@ -246,6 +249,7 @@ def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
 		print 'WARNING: Units mismatch on axis Y'
 	plt.ylim(amin(altitudes), amax(altitudes) + 10)
 	plt.ylabel('Altitude / ' + alt_unit)
+	plt.show(block = False)
 	return
 	
 def combine_histograms(*args):
