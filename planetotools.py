@@ -59,13 +59,35 @@ def __get_current_xy_labels():
 	return ax.get_xlabel(), ax.get_ylabel()
 	
 def __check_xy_units(xunits, yunits):
-	cur_xunits, cur_yunits = __get_current_xy_labels()
-	if not (cur_xunits == '' or cur_yunits == ''):
-		cur_xunits = __get_units_from_label(cur_xunits)
-		cur_yunits = __get_units_from_label(cur_yunits)
-		if not (xunits == cur_xunits and yunits == cur_yunits):
-			print 'WARNING: Units mismatch in current plot'
+	match_x = __check_x_units(xunits)
+	match_y = __check_y_units(yunits)
+	mismatch_axes = ''
+	if not match_x:
+		mismatch_axes += 'X'
+	if not match_y:
+		if not match_x:
+			mismatch_axes += ', Y'
+		else:
+			mismatch_axes += 'Y'
+	if not (match_x or match_y):
+		print 'WARNING: Units mismatch on axis', mismatch_axes
 	return
+	
+def __check_x_units(xunits):
+	cur_xunits, cur_yunits = __get_current_xy_labels()
+	if not cur_xunits == '':
+		cur_xunits = __get_units_from_label(cur_xunits)
+		return xunits == cur_xunits
+	else:
+		return True
+
+def __check_y_units(yunits):
+	cur_xunits, cur_yunits = __get_current_xy_labels()
+	if not cur_yunits == '':
+		cur_yunits = __get_units_from_label(cur_yunits)
+		return yunits == cur_yunits
+	else:
+		return True
 		
 def plot_edep_profile(hist, *args, **kwargs):
 	"""Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
@@ -201,6 +223,29 @@ def plot_2d_hist(hist, *args, **kwargs):
 	plt.title(title)
 	cbar.set_label('log ' + units)
 	plt.show(block = False)
+	return
+	
+def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
+	"""Plots the detector levels of the given flux histograms into the current plot."""
+	left, right = plt.xlim()
+	if not plot_only == []:
+		detectors = plot_only
+	else:
+		detectors = fluxhists.keys()
+	for detector in dont_plot:
+		if detector in detectors:
+			detectors.remove(detector)
+	altitudes = []
+	for detector in detectors:
+		altitude, alt_unit = fluxhists[detector].params['Altitude'].split(' ')
+		altitude = float64(altitude)
+		altitudes.append(altitude)
+		plt.plot((left, right), (altitude, altitude), 'k')
+		plt.text(left, altitude + 1., 'Detector ' + str(detector))
+	if not __check_y_units(alt_unit):
+		print 'WARNING: Units mismatch on axis Y'
+	plt.ylim(amin(altitudes), amax(altitudes) + 10)
+	plt.ylabel('Altitude / ' + alt_unit)
 	return
 	
 def combine_histograms(*args):
