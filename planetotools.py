@@ -189,7 +189,7 @@ def scale_array_per_nuc(array, weight):
 	array[:,3:] *= weight
 	return
 
-def plot_2d_hist(hist, *args, **kwargs):
+def plot_2d_hist(hist, logscale = True, cosmonuc_range = True, *args, **kwargs):
 	"""Plots 2D histogram of cosmogenic nuclides. Pass the histogram as available through planetoparse to plot."""
 	if hist.isempty():
 		print 'WARNING: Unable to plot, histogram is all-zero.'
@@ -209,13 +209,18 @@ def plot_2d_hist(hist, *args, **kwargs):
 	else:
 		lw = kwargs['lw']
 		kwargs.pop('lw')
-	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = log10(hist.data[:,4]), s = s, marker = marker, lw = lw, *args, **kwargs)
+	if logscale:
+		c = log10(hist.data[:,4])
+	else:
+		c = hist.data[:,4]
+	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
 	plt.xlabel(hist.params['Xaxis'])
 	plt.ylabel(hist.params['Yaxis'])
-	plt.xlim([0,25])
-	plt.xticks(arange(0, 26, 2))
-	plt.ylim([0,25])
-	plt.yticks(arange(0, 26, 2))
+	if cosmonuc_range:
+		plt.xlim([0,25])
+		plt.xticks(arange(0, 26, 2))
+		plt.ylim([0,25])
+		plt.yticks(arange(0, 26, 2))
 	fig = plt.gcf()
 	ax = fig.get_axes()
 	title, units = __parse_title(hist.params['Title'])
@@ -226,7 +231,9 @@ def plot_2d_hist(hist, *args, **kwargs):
 			fig.subplots_adjust()
 	cbar=plt.colorbar()
 	plt.title(title)
-	cbar.set_label('log ' + units)
+	if logscale:
+		units = 'log ' + units
+	cbar.set_label(units)
 	plt.show(block = False)
 	return
 	
