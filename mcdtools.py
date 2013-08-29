@@ -57,7 +57,7 @@ def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, *args, **kwar
 				components.remove(component)
 	for component in components:
 		plt.plot(mcddata.data['comp'][component], mcddata.data['xz'], label = component, *args, **kwargs)
-	plt.legend(loc = 'lower left')
+	plt.legend(loc = 'best')
 	__check_xy_units('Volume mixing ratio', 'km')
 	plt.xlabel('Volume mixing ratio')
 	plt.ylabel('Height / km')

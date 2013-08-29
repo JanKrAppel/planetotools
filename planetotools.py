@@ -154,7 +154,7 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
 	plt.ylabel(yunits)
 	plt.xscale('log')
 	plt.yscale('log')
-	plt.legend()
+	plt.legend(loc = 'best')
 	plt.show(block = False)
 	return
 	
