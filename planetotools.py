@@ -321,10 +321,15 @@ def __combine_single_hists(hist1, hist2):
 	if not (res.data[:,0] == hist2.data[:,0]).all() or not (res.data[:,1] == hist2.data[:,1]).all() or not (res.data[:,2] == hist2.data[:,2]).all():
 		print 'ERROR: Unable to combine histograms, binning is different.'
 		return hist1
-	else:
-		res.data[:,3] += hist2.data[:,3]
-		res.data[:,4] += hist2.data[:,4]
-		return res
+	xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+	yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+	xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+	yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+	if not (xunits1 == xunits2 and yunits1 == yunits2):
+		print 'ERROR: Unable to combine histograms, units mismatch.'
+	res.data[:,3] += hist2.data[:,3]
+	res.data[:,4] += hist2.data[:,4]
+	return res
 		
 def plot_primaries(results, *args, **kwargs):
 	"""Plot all primary particle fluxes in a result."""
