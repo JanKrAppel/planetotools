@@ -91,6 +91,55 @@ def __check_y_units(yunits):
 		return yunits == cur_yunits
 	else:
 		return True
+
+"""class log_interpolator:
+	def __init__(self, atmodata, field_x, field_y):
+		from scipy.interpolate import interp1d
+		self.atmodata = atmodata
+		self.field_x = field_x
+		self.field_y = field_y
+		self.__interpolator = interp1d(self.atmodata.data[self.field_x][::-1], log10(self.atmodata.data[self.field_y][::-1]), kind = 'linear')
+		return
+		
+	def __call__(self, x):
+		return 10**self.__interpolator(x)
+"""
+
+class log_interpolator:
+	def __init__(self, atmodata, field_x, field_y):
+		self.atmodata = atmodata
+		self.field_x = field_x
+		self.field_y = field_y
+		return
+		
+	def __call__(self, x):
+		return 10**interp(x, self.atmodata.data[self.field_x], log10(self.atmodata.data[self.field_y]))
+
+def convert_edep_to_LET(profile, atmodata):
+	"""Convert a energy deposition profile in rad/s vs km to keV/um vs km. Options needed are the deposition profile to convert and the atmodata/mcddata atmosphere data used in the simulation run."""
+	res = histdata(copyhist = profile)
+	tmp, yunits = __parse_title(profile.params['Xaxis'])
+	if yunits == 'km':
+		x_field = 'xz'
+	elif yunits == 'g/cm2':
+		x_field = 'shield_depth'
+	else:
+		print 'ERROR: Unknown altitude scaling, aborting'
+		return None
+	interpolate = log_interpolator(atmodata, x_field, 'dens')
+	for line in res.data:
+		dens = interpolate(line[2])
+		line[3:] /= 1e3 #in J*cm**2/g
+		#convert to J/cm:
+		line[3:] *= dens
+		#convert to keV/cm:
+		line[3:] *= 6.241509e15
+		#convert to keV/um:
+		line[3:] /= 1e4
+	title, xunits = __parse_title(res.params['Title'])
+	title = re.sub('Deposited energy', 'LET', title)
+	res.params['Title'] = title + ' [keV/um]'
+	return res
 		
 def plot_edep_profile(hist, *args, **kwargs):
 	"""Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""

@@ -72,7 +72,7 @@ class mcdparse:
 			if i == 0:
 				res.append(float64(0.))
 			else:
-				dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e5
+				dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e2
 				res.append((self.data['dens'][i] * dh) + res[-1])
 		self.data['shield_depth'] = array(res, dtype = float64)
 		return
@@ -233,7 +233,7 @@ class atmoparse:
 			if i == 0:
 				res.append(float64(0.))
 			else:
-				dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e5
+				dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e2
 				res.append((self.data['dens'][i] * dh) + res[-1])
 		self.data['shield_depth'] = array(res, dtype = float64)
 		return
