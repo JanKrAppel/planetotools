@@ -6,6 +6,7 @@ import cPickle
 
 DELIMITER = '//////////////////////////////////////////////////\n'
 PARAMS_PATTERN = '(\w*)\s*:\s*(.*)\n'
+DEFAULT_SORT_CONFIG = {'flux_up': ['UpHist', '2'], 'flux_down': ['DownHist', '1'], 'flux2d_up': ['UpPosHist', '2'], 'flux2d_down': ['DownPosHist', '1'], }
 
 ####################
 #histdata class definition
@@ -202,7 +203,7 @@ class histdata:
 class planetoparse:
 	"""Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
 	
-	def __init__(self, filename = None, verbosity = 0):
+	def __init__(self, filename = None, verbosity = 0, sort_config = None):
 		self.primaries = 0
 		self.normalisation = ''
 		self.params = {}
@@ -214,6 +215,21 @@ class planetoparse:
 		self.edep_soil = []
 		self.edep_atmo = []
 		self.primhists = {}
+		self.flux2d_up = []
+		self.flux2d_down = []
+		if sort_config is None:
+			try:
+				from planetoparse_cfg import sort_config
+			except ImportError:
+				sort_config = DEFAULT_SORT_CONFIG
+		sort_conf_keys = sort_config.keys()
+		sort_conf_keys.sort()
+		req_keys = DEFAULT_SORT_CONFIG.keys()
+		req_keys.sort()
+		if not sort_conf_keys == req_keys:
+			self.sort_config == DEFAULT_SORT_CONFIG
+		else:
+			self.sort_config = sort_config
 		if not filename is None:
 			self.parse_file(filename, verbosity = verbosity)
 		return
@@ -272,6 +288,10 @@ class planetoparse:
 		if not self.cosmonuc is None:
 			print 'Cosmogenic nuclide histogram present'
 			count += 1
+		print 'Upwards 2D flux histograms:', len(self.flux2d_up)
+		count += len(self.flux2d_up)
+		print 'Downwards 2D flux histograms:', len(self.flux2d_down)
+		count += len(self.flux2d_down)
 		print 'Other 2D histograms:', len(self.hists2d)
 		count += len(self.hists2d)
 		print 'Primaries histograms:', len(self.primhists)
@@ -311,6 +331,16 @@ class planetoparse:
 		if self.cosmonuc.isempty():
 			message += '\tCosmogenic nuclides histogram\n'
 			count += 1
+		#flux2d_down:
+		for hist in self.flux2d_down:
+			if hist.isempty():
+				message += '\tflux2d_down: ' + parse_title(hist) + '\n'
+				count += 1
+		#flux2d_up:
+		for hist in self.flux2d_up:
+			if hist.isempty():
+				message += '\tflux2d_up: ' + parse_title(hist) + '\n'
+				count += 1
 		#hists2d:
 		for hist in self.hists2d:
 			if hist.isempty():
@@ -387,8 +417,16 @@ class planetoparse:
 
 	def __parse_2d_hist(self, infile, line):
 		res, infile, line = self.__parse_hist(infile, line)
-		if res.title.split('/')[1] == 'COSMONUC':
+		title = res.title.split('/')
+		if title[1] == 'COSMONUC':
 			self.cosmonuc = res
+		elif title[1] == 'FLUX':
+			if title[4] in self.sort_config['flux2d_down']:
+				self.flux2d_down.append(res)
+			elif title[4] in self.sort_config['flux2d_up']:
+				self.flux2d_up.append(res)
+			else:
+				self.hists2d.append(res)
 		else:
 			self.hists2d.append(res)
 		return infile, line
@@ -399,14 +437,16 @@ class planetoparse:
 		if title[1] == 'FLUX':
 			res.particle = title[3]
 			res.detector = int(title[2][3:])
-			if title[4] == '1':
+			if title[4] in self.sort_config['flux_down']:
 				if not res.particle in self.flux_down:
 					self.flux_down[res.particle] = {}
 				self.flux_down[res.particle][res.detector] = res
-			else:
+			elif title[4] in self.sort_config['flux_up']:
 				if not res.particle in self.flux_up:
 					self.flux_up[res.particle] = {}
 				self.flux_up[res.particle][res.detector] = res
+			else:
+				self.hists1d.append(res)
 		elif title[1] == 'EDEP':
 			self.edep_atmo.append(res)
 		elif title[1] == 'SOIL_EDEP':
@@ -427,6 +467,8 @@ class planetoparse:
 		cPickle.dump(self.normalisation, outfile)
 		cPickle.dump(self.params, outfile)
 		cPickle.dump(self.hists2d, outfile)
+		cPickle.dump(self.flux2d_up, outfile)
+		cPickle.dump(self.flux2d_down, outfile)
 		cPickle.dump(self.cosmonuc, outfile)
 		cPickle.dump(self.hists1d, outfile)
 		cPickle.dump(self.flux_up, outfile)
@@ -444,6 +486,8 @@ class planetoparse:
 		self.normalisation = cPickle.load(infile)
 		self.params = cPickle.load(infile)
 		self.hists2d = cPickle.load(infile)
+		self.flux2d_up = cPickle.load(infile)
+		self.flux2d_down = cPickle.load(infile)
 		self.cosmonuc = cPickle.load(infile)
 		self.hists1d = cPickle.load(infile)
 		self.flux_up = cPickle.load(infile)
@@ -473,6 +517,10 @@ class planetoparse:
 		for param in self.params:
 			outfile.write(param + ' : ' + str(self.params[param]) + '\n')
 		self.__save_hist_to_ascii(self.cosmonuc, outfile)
+		for hist in self.flux2d_up:
+			self.__save_hist_to_ascii(hist, outfile)
+		for hist in self.flux2d_down:
+			self.__save_hist_to_ascii(hist, outfile)
 		for hist in self.hists2d:
 			self.__save_hist_to_ascii(hist, outfile)
 		for particle in self.flux_up:
