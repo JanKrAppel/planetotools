@@ -78,7 +78,7 @@ def plot_shield_depth_profile(mcddata, *args, **kwargs):
 	plt.show(block = False)
 	return
 	
-def plot_data_overview(mcddata, title = False, *args, **kwargs):
+def plot_data_overview(mcddata, title = False, legend = False, *args, **kwargs):
 	"""Plot a data overview for the given MCD data object.
 	This creates a subplot with temperature, pressure, density and composition profiles."""
 	plt.subplot(221)
@@ -91,5 +91,18 @@ def plot_data_overview(mcddata, title = False, *args, **kwargs):
 	plot_shield_depth_profile(mcddata, *args, **kwargs)
 	if title:
 		plt.suptitle('Data overview for ' + mcddata.params['filename'])
-	pass
-
+	if legend:
+		make_overview_legend()
+	return
+	
+def make_overview_legend():
+	"""Plot a legend into all four data overview subplots."""
+	plt.subplot(221)
+	plt.legend(loc = 'best')
+	plt.subplot(222)
+	plt.legend(loc = 'best')
+	plt.subplot(223)
+	plt.legend(loc = 'best')
+	plt.subplot(224)
+	plt.legend(loc = 'best')
+	return
