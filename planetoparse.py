@@ -601,4 +601,100 @@ class planetoparse:
 		else:
 			print 'Unscaled', count, 'flux histograms'
 		return
+		
+	def combine_highz_isotopes(self, verbosity = 0):
+		#do this in flux_up, flux_down
+		if verbosity > 0:
+			print 'Combining high-Z histograms in downward flux...'
+		self.__combine_highz_flux(self.flux_down, verbosity = verbosity)
+		if verbosity > 0:
+			print 'Combining high-Z histograms in upward flux...'
+		self.__combine_highz_flux(self.flux_up, verbosity = verbosity)
+		return
+		
+	def __combine_highz_flux(self, flux_list, verbosity = 0):
+		tmpres = []
+		#get list of isotopes
+		isotopes = []
+		for particle in flux_list.keys():
+			if '[0.0]' in particle:
+				isotopes.append(re.sub('\[0.0\]', '', particle))
+		#get list of elements
+		elements = {}
+		for isotope in isotopes:
+			parse_isotope = re.match('([a-zA-Z]*)([0-9]*)', isotope)
+			if not parse_isotope is None:
+				if not parse_isotope.group(1) in elements:
+					elements[parse_isotope.group(1)] = []
+				if not parse_isotope.group(2) in elements[parse_isotope.group(1)]:
+					elements[parse_isotope.group(1)].append(parse_isotope.group(2))
+		if verbosity > 0:
+			if len(elements) > 0:
+				string = 'Found the following high-Z elements:'
+				for element in elements:
+					string += '\n\t' + element + ', isotopes: '
+					for isotope in elements[element]:
+						string += isotope + ', '
+					string = string[:-2]
+				print string
+			else:
+				#there are no elements, might as well just return
+				print 'No high-Z elements found.'
+				return
+		#combine histograms for each element
+		for element in elements:
+			detectors = self.__get_common_detectors(flux_list, element, elements[element])
+			if verbosity > 1:
+				print 'Combining ' + element + ' histograms in ' + str(len(detectors)) + ' detector levels...'
+			for detector in detectors:
+				#find the middle isotope, we want to use that binning:
+				middle_index = int64(floor(len(elements[element])/2))
+				middle_isotope = elements[element][middle_index]
+				#get the list of the remaining isotopes:
+				isotopes = elements[element][:middle_index] + elements[element][middle_index + 1:]
+				#copy the histogram of the middle isotope, we will use that for the basis
+				middle_hist = flux_list[self.__get_particle_name(element, middle_isotope)][detector]
+				middle_hist.scale_per_nuc(float64(middle_isotope))
+				res = histdata(copyhist = middle_hist)
+				res.params['Title'] = re.sub(self.__get_particle_name(element, middle_isotope, regex = True), element, res.params['Title'])
+				res.particle = element
+				#move through remaining isotopes and add up the histograms:
+				for isotope in isotopes:
+					hist = flux_list[self.__get_particle_name(element, isotope)][detector]
+					hist.scale_per_nuc(float64(isotope))
+					res = self.__combine_single_hists(res, hist)
+				#add the result into the flux list:
+				if not element in flux_list:
+					flux_list[element] = {}
+				flux_list[element][detector] = res
+		return
+		
+	def __get_particle_name(self, element, isotope, regex = False):
+		if not regex:
+			return element + isotope + '[0.0]'
+		else:
+			return element + isotope
 
+	def __get_common_detectors(self, flux_list, element, isotope_list):
+		res = flux_list[self.__get_particle_name(element, isotope_list[0])].keys()
+		for isotope in isotope_list[1:]:
+			tmp = flux_list[self.__get_particle_name(element, isotope)].keys()
+			for detector in res:
+				if not detector in tmp:
+					res.remove(detector)
+		return res
+		
+	def __combine_single_hists(self, hist1, hist2):
+		if not len(hist1.data) == len(hist2.data):
+			print 'ERROR: Unable to combine histograms, different length.'
+			return hist1
+		res = histdata(copyhist = hist1)
+		#hist is the interpolated histogram to add:
+		hist = 10**interp(res.data[:,2], hist2.data[:,2], log10(hist2.data[:,3]))
+		#remove the nan values:
+		hist[isnan(hist)] = 0.
+		#add everything up:
+		res.data[:,3] += hist
+		res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
+		return res
+		

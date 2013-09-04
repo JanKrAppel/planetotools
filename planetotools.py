@@ -377,7 +377,7 @@ def __combine_single_hists(hist1, hist2):
 	if not (xunits1 == xunits2 and yunits1 == yunits2):
 		print 'ERROR: Unable to combine histograms, units mismatch.'
 	res.data[:,3] += hist2.data[:,3]
-	res.data[:,4] += hist2.data[:,4]
+	res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
 	return res
 		
 def plot_primaries(results, *args, **kwargs):
