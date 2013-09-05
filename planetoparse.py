@@ -195,6 +195,41 @@ class histdata:
 			self.data[i, 0] = self.data[i, 2] - bin_width / 2
 			self.data[i, 1] = self.data[i, 2] + bin_width / 2
 		return
+		
+	def save_as_gps(self, filename, shape = ''):
+		"""Saves the histogram information in a set of Geant4 GPS gun commands that will recreate this spectrum."""
+		macrofile = open(filename, 'w')
+		macrofile.write('#planetoparse generated GPS source setup for ' + self.particle + '\n')
+		macrofile.write('/gps/source/add ' + str(self.params['normalisation_factor']) + '\n')
+		macrofile.write('/gps/particle ' + self.particle + '\n')
+		#shape config:
+		if not shape == '':
+			if shape == 'RAD_above':
+				macrofile.write('/gps/pos/type Beam\n')
+				macrofile.write('/gps/pos/centre 0. 0. 20. cm\n')
+				macrofile.write('/gps/pos/shape Circle\n')
+				macrofile.write('/gps/pos/radius 2. cm\n')
+				macrofile.write('/gps/direction 0. 0. -1.\n')
+				macrofile.write('/gps/ang/type cos\n')
+			elif shape == 'RAD_below':
+				macrofile.write('/gps/ang/type cos\n')
+				macrofile.write('/gps/pos/type Beam\n')
+				macrofile.write('/gps/pos/centre 0. 0. -20. cm\n')
+				macrofile.write('/gps/pos/shape Circle\n')
+				macrofile.write('/gps/pos/radius 2. cm\n')
+				macrofile.write('/gps/direction 0. 0. 1.\n')
+			else:
+				macrofile.write(str(shape) + '\n')
+		#histogram points:
+		macrofile.write('/gps/hist/inter Log\n')
+		macrofile.write('/gps/ene/type User\n')
+		macrofile.write('/gps/hist/type energy\n')
+		#first point:
+		macrofile.write('/gps/hist/point ' + str(self.data[0, 0]) + '\n')
+		for i in arange(0, len(self.data)):
+			macrofile.write('/gps/hist/point ' + str(self.data[i, 1]) + ' ' + str(self.data[i, 3] / (self.data[i, 1] - self.data[i, 0])) + '\n')
+		macrofile.close()
+		return
 			
 ####################
 #planetoparse class definition
