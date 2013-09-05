@@ -603,6 +603,7 @@ class planetoparse:
 		return
 		
 	def combine_highz_isotopes(self, verbosity = 0):
+		"""Combines available high-Z histograms in flux_up and flux_down into one histogram per element. High-Z histograms are detected by the string '[0.0]' being present in the particle name. Fluxes are scaled to energy/nuc prior to combining, the resulting histogram will have the binning and nuclear weight of the middle isotope."""
 		#do this in flux_up, flux_down
 		if verbosity > 0:
 			print 'Combining high-Z histograms in downward flux...'
@@ -613,7 +614,6 @@ class planetoparse:
 		return
 		
 	def __combine_highz_flux(self, flux_list, verbosity = 0):
-		tmpres = []
 		#get list of isotopes
 		isotopes = []
 		for particle in flux_list.keys():
