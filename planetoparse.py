@@ -221,7 +221,6 @@ class histdata:
 			else:
 				macrofile.write(str(shape) + '\n')
 		#histogram points:
-		macrofile.write('/gps/hist/inter Log\n')
 		macrofile.write('/gps/ene/type User\n')
 		macrofile.write('/gps/hist/type energy\n')
 		#first point:
