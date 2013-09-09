@@ -262,7 +262,11 @@ def plot_2d_hist(hist, logscale = True, cosmonuc_range = True, *args, **kwargs):
 		c = log10(hist.data[:,4])
 	else:
 		c = hist.data[:,4]
-	plt.scatter(hist.data[:,0] + .5, hist.data[:,2] + .5, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
+	if cosmonuc_range:
+		offset = .5
+	else:
+		offset = 0.
+	plt.scatter(hist.data[:,0] + offset, hist.data[:,2] + offset, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
 	plt.xlabel(hist.params['Xaxis'])
 	plt.ylabel(hist.params['Yaxis'])
 	if cosmonuc_range:
