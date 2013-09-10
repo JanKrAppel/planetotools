@@ -210,14 +210,19 @@ class histdata:
 				macrofile.write('/gps/pos/shape Circle\n')
 				macrofile.write('/gps/pos/radius 2. cm\n')
 				macrofile.write('/gps/direction 0. 0. -1.\n')
-				macrofile.write('/gps/ang/type cos\n')
 			elif shape == 'RAD_below':
-				macrofile.write('/gps/ang/type cos\n')
 				macrofile.write('/gps/pos/type Beam\n')
 				macrofile.write('/gps/pos/centre 0. 0. -20. cm\n')
 				macrofile.write('/gps/pos/shape Circle\n')
 				macrofile.write('/gps/pos/radius 2. cm\n')
 				macrofile.write('/gps/direction 0. 0. 1.\n')
+			elif shape == 'roveronmars':
+				macrofile.write('/gps/pos/type Plane\n')
+				macrofile.write('/gps/pos/shape Square\n')
+				macrofile.write('/gps/pos/centre 0. 0. -.5 m\n')
+				macrofile.write('/gps/pos/halfx .5 m\n')
+				macrofile.write('/gps/pos/halfy .5 m\n')
+				macrofile.write('/gps/ang/type cos\n')
 			else:
 				macrofile.write(str(shape) + '\n')
 		#histogram points:
@@ -647,7 +652,7 @@ class planetoparse:
 		self.__combine_highz_flux(self.flux_up, verbosity = verbosity)
 		return
 		
-	def __combine_highz_flux(self, flux_list, verbosity = 0):
+	def __get_highz_element_list(self, flux_list):
 		#get list of isotopes
 		isotopes = []
 		for particle in flux_list.keys():
@@ -662,6 +667,10 @@ class planetoparse:
 					elements[parse_isotope.group(1)] = []
 				if not parse_isotope.group(2) in elements[parse_isotope.group(1)]:
 					elements[parse_isotope.group(1)].append(parse_isotope.group(2))
+		return elements
+		
+	def __combine_highz_flux(self, flux_list, verbosity = 0):
+		elements = self.__get_highz_element_list(flux_list)
 		if verbosity > 0:
 			if len(elements) > 0:
 				string = 'Found the following high-Z elements:'
@@ -732,3 +741,25 @@ class planetoparse:
 		res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
 		return res
 		
+	def print_nonempty_highz(self):
+		"""Print a list of high-Z histograms that are not empty."""
+		downlist, downcount = self.__get_nonempty_highz_string(self.flux_up, '\tUpward flux histograms')
+		uplist, upcount = self.__get_nonempty_highz_string(self.flux_up, '\tUpward flux histograms')
+		if not (downcount == 0 and upcount == 0):
+			output = 'The following non-zero high-Z histograms have been detected:\n' + downlist + uplist
+			output += '\n\nTotal count: ' + str(downcount + upcount)
+		else:
+			output = 'No non-zero high-Z histograms have been detected.'
+		print output
+		
+	def __get_nonempty_highz_string(self, flux_list, prefix):
+		res = ""
+		count = 0
+		elements = self.__get_highz_element_list(self.flux_up)
+		for element in elements:
+			for detector in flux_list[element]:
+				if not flux_list[element][detector].isempty():
+					res += prefix + ', element ' + element + ', detector ' + str(detector) + '\n'
+					count += 1
+		return res[:-1], count
+

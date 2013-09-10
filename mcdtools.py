@@ -106,3 +106,69 @@ def make_overview_legend():
 	plt.subplot(224)
 	plt.legend(loc = 'best')
 	return
+	
+def __get_daily_mean_dustdepth(date, dustscen, lon, lat):
+	day, month, year, hour, minute, second = date
+	hours = arange(0, 23, 1)
+	dust = []
+	ls = []
+	loct = []
+	for hour in hours:
+		(ierr, xdate) = julian(month, day, year, hour, 0, 0)
+		(pres, dens, temp, zonwind, merwind, meanvar, extvar, seedout, ierr) = call_mcd(3, 0, lon, lat, 1, 0, xdate, 0, MCD_DATA_DIR, dustscen, 4, 10, 0, ones(100))
+		if extvar[35] == -999.0:
+			res = nan
+		else:
+			res = extvar[35]
+		dust.append(res)
+		ls.append(extvar[4])
+		loct.append(extvar[5])
+	return mean(dust), amax(dust), amin(dust), mean(ls), mean(loct)
+
+def plot_yearly_dust(year, dust, lon = 0., lat = 0.):
+	"""Plots the daily mean, min and max values for the dust optical depth for the given year and dust scenario."""
+	#parse dust scenario, if needed
+	if type(dust) == str:
+		if dust in dust_scenarios:
+			dust = dust_scenarios[dust]
+		else:
+			print 'ERROR: Invalid dust scenario selected.'
+			return
+	dustcurve = []
+	maxcurve = []
+	mincurve = []
+	daymonth = []
+	marstime = []
+	for month in arange(1, 13, 1):
+		for day in arange(1, 31, 1):
+			dustmean, dustmax, dustmin, ls, loct = __get_daily_mean_dustdepth((day, month, year, 12, 00, 00), dust, lon = lon, lat = lat)
+			daymonth.append(str(day) + '/' + str(month))
+			marstime.append('Ls ' + str(around(ls, 1)))
+			dustcurve.append(dustmean)
+			maxcurve.append(dustmax)
+			mincurve.append(dustmin)
+	plt.plot(dustcurve, 'bo', label = 'mean')
+	plt.plot(maxcurve, 'ro', label = 'max')
+	plt.plot(mincurve, 'go', label = 'min')
+	plt.legend(loc = 'best')
+	#Earth time xaxis:
+	locs, labels = plt.xticks()
+	daymonth = array(daymonth)
+	locs = locs[locs<= len(daymonth)]
+	newlabels = daymonth[int64(locs)]
+	plt.xticks(locs, newlabels)
+	plt.xlabel('Day/Month')
+	#Mars time xaxis:
+	marstime = array(marstime)
+	newlabels = marstime[int64(locs)]
+	plt.gca().twiny() #get shared y axis -> second x axis
+	plt.xticks(locs, newlabels)
+	plt.xlabel('Mars solar longitude')
+	#set ylabel and title
+	plt.ylabel('Dust optical depth')
+	for value in dust_scenarios:
+		if dust_scenarios[value] == dust:
+			dustscen = value
+	plt.suptitle('Dust optical depth variations for ' + str(year) + ', scenario ' + dustscen)
+	return	
+
