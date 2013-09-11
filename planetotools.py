@@ -376,7 +376,7 @@ def plot_primaries(results, *args, **kwargs):
 	for particle in results.primhists:
 		if particle == 'alpha':
 			results.primhists[particle].scale_per_nuc(4)
-		plot_1d_hist(results.primhists[particle], scale_by = 2., *args, **kwargs)
+		plot_1d_hist(results.primhists[particle], *args, **kwargs)
 	return
 	
 def plot_proton_alpha(results, detector, scale_per_nuc = True, *args, **kwargs):

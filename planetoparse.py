@@ -494,6 +494,8 @@ class planetoparse:
 			particle = res.title.split('/')[2]
 			res.particle = 'primary ' + particle
 			res.detector = 0
+			#fix primary particle flux being too low:
+			res.data[:,3:] *= 2.
 			self.primhists[particle] = res
 		else:
 			self.hists1d.append(res)
