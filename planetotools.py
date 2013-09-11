@@ -92,19 +92,6 @@ def __check_y_units(yunits):
 	else:
 		return True
 
-"""class log_interpolator:
-	def __init__(self, atmodata, field_x, field_y):
-		from scipy.interpolate import interp1d
-		self.atmodata = atmodata
-		self.field_x = field_x
-		self.field_y = field_y
-		self.__interpolator = interp1d(self.atmodata.data[self.field_x][::-1], log10(self.atmodata.data[self.field_y][::-1]), kind = 'linear')
-		return
-		
-	def __call__(self, x):
-		return 10**self.__interpolator(x)
-"""
-
 class log_interpolator:
 	def __init__(self, atmodata, field_x, field_y):
 		self.atmodata = atmodata

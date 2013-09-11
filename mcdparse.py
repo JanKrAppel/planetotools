@@ -209,6 +209,20 @@ class mcdparse:
 		res += dustscen
 		return res
 		
+	def __call__(self, height):
+		"""Return a dictionary with the interpolated atmosphere values at the requested height."""
+		datafields = self.data.keys()
+		datafields.remove('xz')
+		res = {}
+		for entry in datafields:
+			if entry == 'comp':
+				res[entry] = {}
+				for element in self.data[entry]:
+					res[entry][element] = interp(height, self.data['xz'], self.data[entry][element])	
+			else:
+				res[entry] = interp(height, self.data['xz'], self.data[entry])
+		return res
+				
 ####################
 #Atmotable file parser
 ####################
@@ -377,3 +391,18 @@ class atmoparse:
 		else:
 			print 'No data loaded.'
 		return
+
+	def __call__(self, height):
+		"""Return a dictionary with the interpolated atmosphere values at the requested height."""
+		datafields = self.data.keys()
+		datafields.remove('xz')
+		res = {}
+		for entry in datafields:
+			if entry == 'comp':
+				res[entry] = {}
+				for element in self.data[entry]:
+					res[entry][element] = interp(height, self.data['xz'], self.data[entry][element])	
+			else:
+				res[entry] = interp(height, self.data['xz'], self.data[entry])
+		return res
+		
