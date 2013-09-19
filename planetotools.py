@@ -225,9 +225,54 @@ def scale_array_per_nuc(array, weight):
 	array[:,3:] *= weight
 	return
 
-def plot_2d_hist(hist, logscale = True, cosmonuc_range = True, *args, **kwargs):
-	"""Plots 2D histogram of cosmogenic nuclides. Pass the histogram as available through planetoparse to plot."""
+def plot_2d_hist(hist, logscale = True, *args, **kwargs):
+	"""Plots 2D histogram data. Pass the histogram as available through planetoparse to plot."""
 	if hist.isempty():
+		print 'WARNING: Unable to plot, histogram is all-zero.'
+		return
+	histdat = []
+	xedges = []
+	yedges = []
+	for line in hist.data:
+		if not line[0] in xedges:
+			xedges.append(line[0])
+		if not line[1] in xedges:
+			xedges.append(line[1])
+		if not line[2] in yedges:
+			yedges.append(line[2])
+		if not line[3] in yedges:
+			yedges.append(line[3])
+		if logscale:
+			histdat.append(log10(line[4]))
+		else:
+			histdat.append(line[4])
+	histdat = array(histdat).reshape((len(xedges) - 1, len(yedges) - 1))
+	xedges = array(xedges)
+	yedges = array(yedges)
+	xedges.sort()
+	yedges.sort()
+	plt.pcolormesh(xedges, yedges, histdat.transpose(), *args, **kwargs)
+	plt.xlabel(hist.params['Xaxis'])
+	plt.ylabel(hist.params['Yaxis'])
+	fig = plt.gcf()
+	ax = fig.get_axes()
+	title, units = __parse_title(hist.params['Title'])
+	#remove colorbar, if already present
+	if len(ax) == 2:
+		if ax[0].get_title() == title and ax[1].get_title() == '':
+			fig.delaxes(ax[1])
+			fig.subplots_adjust()
+	cbar=plt.colorbar()
+	plt.title(title)
+	if logscale:
+		units = 'log ' + units
+	cbar.set_label(units)
+	plt.show(block = False)
+	return
+	
+def plot_cosmonuc(results, logscale = True, *args, **kwargs):
+	"""Plots 2D histogram of cosmogenic nuclides. Pass the planetoparse instance to plot."""
+	if results.cosmonuc.isempty():
 		print 'WARNING: Unable to plot, histogram is all-zero.'
 		return
 	if not 's' in kwargs:
@@ -246,21 +291,16 @@ def plot_2d_hist(hist, logscale = True, cosmonuc_range = True, *args, **kwargs):
 		lw = kwargs['lw']
 		kwargs.pop('lw')
 	if logscale:
-		c = log10(hist.data[:,4])
+		c = log10(results.cosmonuc.data[:,4])
 	else:
-		c = hist.data[:,4]
-	if cosmonuc_range:
-		offset = .5
-	else:
-		offset = 0.
-	plt.scatter(hist.data[:,0] + offset, hist.data[:,2] + offset, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
+		c = results.cosmonuc.data[:,4]
+	plt.scatter(results.cosmonuc.data[:,0] + .5, results.cosmonuc.data[:,2] + .5, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
 	plt.xlabel(hist.params['Xaxis'])
 	plt.ylabel(hist.params['Yaxis'])
-	if cosmonuc_range:
-		plt.xlim([0,25])
-		plt.xticks(arange(0, 26, 2))
-		plt.ylim([0,25])
-		plt.yticks(arange(0, 26, 2))
+	plt.xlim([0,25])
+	plt.xticks(arange(0, 26, 2))
+	plt.ylim([0,25])
+	plt.yticks(arange(0, 26, 2))
 	fig = plt.gcf()
 	ax = fig.get_axes()
 	title, units = __parse_title(hist.params['Title'])
@@ -405,17 +445,28 @@ def plot_cosmonuc_comparison(results1, results2, label1 = None, label2 = None, l
 		if entry in kwargs:
 			kwargs.pop(entry)
 	if label1 is None:
-		plot_2d_hist(results1.cosmonuc, *args, **kwargs)
+		plot_cosmonuc(results1, *args, **kwargs)
 	else:
-		plot_2d_hist(results1.cosmonuc, label = label1, *args, **kwargs)
+		plot_cosmonuc(results1, label = label1, *args, **kwargs)
 	if label2 is None:
-		plot_2d_hist(results2.cosmonuc, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
+		plot_cosmonuc(results2, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
 	else:
-		plot_2d_hist(results2.cosmonuc, label = label2, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
+		plot_cosmonuc(results2, label = label2, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
 	if legend:
 		plt.legend(loc = 'upper left')
 	plt.title('Comparison of cosmogenic nuclide production')
 	return
-			
-if __name__ == '__main__':
-	pass
+	
+def get_normalization_factors(results):
+	"""Get a dictionary with the normalization factors for all particles in the flux_up and flux_down sections of the given results."""
+	res = {}
+	for flux_list in [results.flux_down, results.flux_up]:
+		for particle in flux_list:
+			detector = flux_list[particle].keys()[-1] #this is a completely arbitrary choice
+			if 'normalisation_factor' in flux_list[particle][detector].params:
+				factor = flux_list[particle][detector].params['normalisation_factor']
+			else:
+				factor = nan
+			if not particle in res:
+				res[particle] = factor
+	return res
