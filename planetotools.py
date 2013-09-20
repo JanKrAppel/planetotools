@@ -488,3 +488,18 @@ def print_list_info(histlist, indices = None):
 	print message[:-1]
 	return
 
+def integrate_fluxhist(histogram, limits = None):
+	"""Integrates the flux stored in the given 1D histogram. Pass a tuple (Emin, Emax) as second argument to set the integration range."""
+	if isinstance(histogram, histdata):
+		if not limits is None:
+			mask = (histogram.data[:,0] >= limits[0]) * (histogram.data[:,1] <= limits[1])
+		else:
+			mask = ones(len(histogram.data), dtype = bool)
+		return sum(histogram.data[:,3][mask])
+	elif type(histogram) == dict:
+		if not limits is None:
+			mask = (histogram['x'] >= limits[0]) * (histogram['x'] <= limits[1])
+		else:
+			mask = ones(len(histogram['x']), dtype = bool)
+		return sum(histogram['y'][mask] * histogram['bin_widths'][mask])
+		
