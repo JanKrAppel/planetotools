@@ -470,3 +470,21 @@ def get_normalization_factors(results):
 			if not particle in res:
 				res[particle] = factor
 	return res
+	
+def print_list_info(histlist, indices = None):
+	"""Prints information on histograms in the given histogram list. Optional second argument selects the indices to print."""
+	if indices is None or type(indices) == dict:
+		indices = arange(0, len(histlist))
+	if not hasattr(histlist, '__iter__'):
+		try:
+			indices = int(indices)
+		except ValueError:
+			print 'WARNING: Unable to convert given index, defaulting to all' 
+			indices = arange(0, len(histlist))
+	message = ''
+	for index in indices:
+		message += '{index: >3d}'.format(index = index) + ': {particle: <10s}'.format(particle = histlist[index].particle) + ', detector {detector: >3d}'.format(detector = histlist[index].detector) + ': '
+		message += histlist[index].params['Title'] + '\n'
+	print message[:-1]
+	return
+
