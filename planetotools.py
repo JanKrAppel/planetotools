@@ -295,15 +295,15 @@ def plot_cosmonuc(results, logscale = True, *args, **kwargs):
 	else:
 		c = results.cosmonuc.data[:,4]
 	plt.scatter(results.cosmonuc.data[:,0] + .5, results.cosmonuc.data[:,2] + .5, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
-	plt.xlabel(hist.params['Xaxis'])
-	plt.ylabel(hist.params['Yaxis'])
+	plt.xlabel(results.cosmonuc.params['Xaxis'])
+	plt.ylabel(results.cosmonuc.params['Yaxis'])
 	plt.xlim([0,25])
 	plt.xticks(arange(0, 26, 2))
 	plt.ylim([0,25])
 	plt.yticks(arange(0, 26, 2))
 	fig = plt.gcf()
 	ax = fig.get_axes()
-	title, units = __parse_title(hist.params['Title'])
+	title, units = __parse_title(results.cosmonuc.params['Title'])
 	#remove colorbar, if already present
 	if len(ax) == 2:
 		if ax[0].get_title() == title and ax[1].get_title() == '':
