@@ -247,6 +247,7 @@ def plot_2d_hist(hist, logscale = True, *args, **kwargs):
 		else:
 			histdat.append(line[4])
 	histdat = array(histdat).reshape((len(xedges) - 1, len(yedges) - 1))
+	histdat[histdat == -inf] = 0.
 	xedges = array(xedges)
 	yedges = array(yedges)
 	xedges.sort()
