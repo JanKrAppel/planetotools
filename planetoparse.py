@@ -254,8 +254,8 @@ class planetoparse:
 		self.edep_soil = []
 		self.edep_atmo = []
 		self.primhists = {}
-		self.flux2d_up = []
-		self.flux2d_down = []
+		self.flux2d_up = {}
+		self.flux2d_down = {}
 		if sort_config is None:
 			try:
 				from planetoparse_cfg import sort_config
@@ -286,7 +286,7 @@ class planetoparse:
 			return None, None
 		
 	def parse_file(self, filename, verbosity = 0):
-		"""Parse a Planetocosmics ASCII output file. Set print_stats to True to get information on the parsing results."""
+		"""Parse a Planetocosmics ASCII output file."""
 		infile = open(filename, 'r')
 		line = infile.readline()
 		while not line == '':
@@ -326,11 +326,19 @@ class planetoparse:
 		count = 0
 		if not self.cosmonuc is None:
 			print 'Cosmogenic nuclide histogram present'
-			count += 1
-		print 'Upwards 2D flux histograms:', len(self.flux2d_up)
-		count += len(self.flux2d_up)
-		print 'Downwards 2D flux histograms:', len(self.flux2d_down)
-		count += len(self.flux2d_down)
+			count += 1	
+		tmpcount = 0
+		for particle in self.flux2d_up:
+			for detector in self.flux2d_up[particle]:
+				tmpcount += len(self.flux2d_up[particle][detector])
+		print 'Upwards 2D flux histograms:', tmpcount
+		count += tmpcount
+		tmpcount = 0
+		for particle in self.flux2d_down:
+			for detector in self.flux2d_down[particle]:
+				tmpcount += len(self.flux2d_down[particle][detector])
+		print 'Downwards 2D flux histograms:', tmpcount
+		count += tmpcount
 		print 'Other 2D histograms:', len(self.hists2d)
 		count += len(self.hists2d)
 		print 'Primaries histograms:', len(self.primhists)
@@ -371,15 +379,19 @@ class planetoparse:
 			message += '\tCosmogenic nuclides histogram\n'
 			count += 1
 		#flux2d_down:
-		for hist in self.flux2d_down:
-			if hist.isempty():
-				message += '\tflux2d_down: ' + parse_title(hist) + '\n'
-				count += 1
+		for particle in self.flux2d_down:
+			for detector in self.flux2d_down[particle]:
+				for hist in self.flux2d_down[particle][detector]:
+					if hist.isempty():
+						message += '\tflux2d_down, particle ' + particle + ', detector ' + str(detector) + ':' + parse_title(hist) + '\n'
+						count += 1
 		#flux2d_up:
-		for hist in self.flux2d_up:
-			if hist.isempty():
-				message += '\tflux2d_up: ' + parse_title(hist) + '\n'
-				count += 1
+		for particle in self.flux2d_up:
+			for detector in self.flux2d_up[particle]:
+				for hist in self.flux2d_up[particle][detector]:
+					if hist.isempty():
+						message += '\tflux2d_up, particle ' + particle + ', detector ' + str(detector) + ':' + parse_title(hist) + '\n'
+						count += 1
 		#hists2d:
 		for hist in self.hists2d:
 			if hist.isempty():
@@ -398,19 +410,19 @@ class planetoparse:
 		#primaries:
 		for particle in self.primhists:
 			if self.primhists[particle].isempty():
-				message += '\tPrimary particle histograms, particle ' + particle + '\n'
+				message += '\tprimhists, particle ' + particle + '\n'
 				count += 1
 		#flux_down:
 		for particle in self.flux_down:
 			for detector in self.flux_down[particle]:
 				if self.flux_down[particle][detector].isempty():
-					message += '\tDownward flux histograms, particle ' + particle + ', detector ' + str(detector) + '\n'
+					message += '\tflux_down, particle ' + particle + ', detector ' + str(detector) + '\n'
 					count += 1
 		#flux_up:
 		for particle in self.flux_up:
 			for detector in self.flux_up[particle]:
 				if self.flux_down[particle][detector].isempty():
-					message += '\tUpward flux histograms, particle ' + particle + ', detector ' + str(detector) + '\n'
+					message += '\tflux_up, particle ' + particle + ', detector ' + str(detector) + '\n'
 					count += 1
 		#hists1d:
 		for hist in self.hists2d:
@@ -460,10 +472,20 @@ class planetoparse:
 		if title[1] == 'COSMONUC':
 			self.cosmonuc = res
 		elif title[1] == 'FLUX':
+			res.particle = title[3]
+			res.detector = int(title[2][3:])
 			if title[4] in self.sort_config['flux2d_down']:
-				self.flux2d_down.append(res)
+				if not res.particle in self.flux2d_down:
+					self.flux2d_down[res.particle] = {}
+				if not res.detector in self.flux2d_down[res.particle]:
+					self.flux2d_down[res.particle][res.detector] = []
+				self.flux2d_down[res.particle][res.detector].append(res)
 			elif title[4] in self.sort_config['flux2d_up']:
-				self.flux2d_up.append(res)
+				if not res.particle in self.flux2d_up:
+					self.flux2d_up[res.particle] = {}
+				if not res.detector in self.flux2d_up[res.particle]:
+					self.flux2d_up[res.particle][res.detector] = []
+				self.flux2d_up[res.particle][res.detector].append(res)
 			else:
 				self.hists2d.append(res)
 		else:
