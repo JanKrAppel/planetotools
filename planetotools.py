@@ -504,3 +504,16 @@ def integrate_fluxhist(histogram, limits = None):
 			mask = ones(len(histogram['x']), dtype = bool)
 		return sum(histogram['y'][mask] * histogram['bin_widths'][mask])
 		
+def integrate_2d_fluxhist(histogram, xlimits = None, ylimits = None):
+	"""Integrates the flux stored in the given 2D histogram. Pass a tuple (Emin, Emax) as xlimits or ylimits keyword arguments to set the integration range."""
+	if not xlimits is None:
+		xmask = (histogram.data[:,0] >= xlimits[0]) * (histogram.data[:,1] <= xlimits[1])
+	else:
+		xmask = ones(len(histogram.data), dtype = bool)
+	if not ylimits is None:
+		ymask = (histogram.data[:,2] >= ylimits[0]) * (histogram.data[:,3] <= ylimits[1])
+	else:
+		ymask = ones(len(histogram.data), dtype = bool)
+	mask = xmask * ymask
+	return sum(histogram.data[:,4][mask])
+
