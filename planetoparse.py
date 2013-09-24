@@ -235,6 +235,71 @@ class histdata:
 		macrofile.close()
 		return
 			
+	def save_as_2d_gps(self, filename, shape = ''):
+		"""Saves the histogram information in a set of Geant4 GPS gun commands that will recreate this spectrum. Only really works with Ekin vs cos theta histograms."""
+		macrofile = open(filename, 'w')
+		macrofile.write('#planetoparse generated 2D GPS source setup for ' + self.particle + '\n\n')
+		#shape config:
+		if not shape == '':
+			if shape == 'roveronmars':
+				shape = ''
+				shape += '/gps/pos/type Plane\n'
+				shape += '/gps/pos/shape Square\n'
+				shape += '/gps/pos/centre 0. 0. -.5 m\n'
+				shape += '/gps/pos/halfx .5 m\n'
+				shape += '/gps/pos/halfy .5 m\n'
+		#get number of bins for energy and cosine theta:
+		xedges = []
+		for line in self.data:
+			if not line[0] in xedges:
+				xedges.append(line[0])
+			if not line[1] in xedges:
+				xedges.append(line[1])
+		num_ebins = len(xedges) - 1
+		#compute source intensity:
+		intensity = self.params['normalisation_factor']
+		mask = (self.data[:,2] >= 0.) * (self.data[:,3] >= 0.)		
+		total_flux = sum(self.data[:,4][mask] / (self.data[:,1][mask] - self.data[:,0][mask]))
+		#write source definition
+		for i in arange(0, len(self.data), num_ebins):
+			data = self.data[i:i + num_ebins]
+			mask = (data[:,2] >= 0.) * (data[:,3] >= 0.)
+			flux = sum(data[:,4][mask] / (data[:,1][mask] - data[:,0][mask]))
+			string = self.__gen_1d_gps(data, shape, intensity * flux / total_flux)
+			macrofile.write(string)
+			macrofile.write('\n')
+		macrofile.close()
+		return
+		
+	def __gen_1d_gps(self, hist, shape, intensity):
+		#make data copy
+		data = empty_like(hist)
+		data[:] = hist			
+		res = ''
+		res += '/gps/source/add ' + str(intensity) + '\n'
+		res += '/gps/particle ' + self.particle + '\n'
+		res += shape
+		#histogram points:
+		res += '/gps/ene/type User\n'
+		res += '/gps/hist/type energy\n'
+		elow = data[0, 0]
+		ehigh = data[0, 1]
+		res += '/gps/hist/point ' + str(elow) + '\n'
+		res += '/gps/hist/point ' + str(ehigh) + ' 1.\n'
+		res += '/gps/ang/type User\n'
+		res += '/gps/hist/type theta\n'
+		#prepare the data array:
+		mask = (data[:,2] >= 0.) * (data[:,3] >= 0.)
+		data = data[mask]
+		data[:,2] = arccos(data[:,2])
+		data[:,3] = arccos(data[:,3])
+		data = data[data[:,3].argsort()]
+		#first point:
+		res += '/gps/hist/point ' + str(data[0, 3]) + '\n'
+		for i in arange(0, len(data)):
+			res += '/gps/hist/point ' + str(data[i, 2]) + ' ' + str(data[i, 4] / (ehigh - elow)) + '\n'
+		return res
+
 ####################
 #planetoparse class definition
 ####################
