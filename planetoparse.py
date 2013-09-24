@@ -258,12 +258,12 @@ class histdata:
 		num_ebins = len(xedges) - 1
 		#compute source intensity:
 		intensity = self.params['normalisation_factor']
-		mask = (self.data[:,2] >= 0.) * (self.data[:,3] >= 0.)		
+		mask = (self.data[:,2] < 0.) * (self.data[:,3] < 0.)		
 		total_flux = sum(self.data[:,4][mask] / (self.data[:,1][mask] - self.data[:,0][mask]))
 		#write source definition
 		for i in arange(0, len(self.data), num_ebins):
 			data = self.data[i:i + num_ebins]
-			mask = (data[:,2] >= 0.) * (data[:,3] >= 0.)
+			mask = (data[:,2] < 0.) * (data[:,3] < 0.)
 			flux = sum(data[:,4][mask] / (data[:,1][mask] - data[:,0][mask]))
 			string = self.__gen_1d_gps(data, shape, intensity * flux / total_flux)
 			macrofile.write(string)
@@ -291,8 +291,8 @@ class histdata:
 		#prepare the data array:
 		mask = (data[:,2] >= 0.) * (data[:,3] >= 0.)
 		data = data[mask]
-		data[:,2] = arccos(data[:,2])
-		data[:,3] = arccos(data[:,3])
+		data[:,2] = arccos(data[:,2]) - pi/2
+		data[:,3] = arccos(data[:,3]) - pi/2
 		data = data[data[:,3].argsort()]
 		#first point:
 		res += '/gps/hist/point ' + str(data[0, 3]) + '\n'
