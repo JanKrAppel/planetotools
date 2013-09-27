@@ -265,9 +265,11 @@ class histdata:
 			data = self.data[i:i + num_ebins]
 			mask = (data[:,2] < 0.) * (data[:,3] < 0.)
 			flux = sum(data[:,4][mask] / (data[:,1][mask] - data[:,0][mask]))
-			string = self.__gen_1d_gps(data, shape, intensity * flux / total_flux)
-			macrofile.write(string)
-			macrofile.write('\n')
+			source_intensity = intensity * flux / total_flux
+			if not source_intensity == 0.:
+				string = self.__gen_1d_gps(data, shape, source_intensity)
+				macrofile.write(string)
+				macrofile.write('\n')
 		macrofile.close()
 		return
 		
@@ -286,10 +288,10 @@ class histdata:
 		ehigh = data[0, 1]
 		res += '/gps/hist/point ' + str(elow) + '\n'
 		res += '/gps/hist/point ' + str(ehigh) + ' 1.\n'
-		res += '/gps/ang/type User\n'
+		res += '/gps/ang/type user\n'
 		res += '/gps/hist/type theta\n'
 		#prepare the data array:
-		mask = (data[:,2] >= 0.) * (data[:,3] >= 0.)
+		mask = (data[:,2] < 0.) * (data[:,3] < 0.)
 		data = data[mask]
 		data[:,2] = arccos(data[:,2]) - pi/2
 		data[:,3] = arccos(data[:,3]) - pi/2
