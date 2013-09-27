@@ -227,15 +227,21 @@ def scale_array_per_nuc(array, weight):
 	array[:,3:] *= weight
 	return
 
-def plot_2d_hist(hist, logscale = True, *args, **kwargs):
+def plot_2d_hist(hist, logscale = True, scale_by_widths = False, *args, **kwargs):
 	"""Plots 2D histogram data. Pass the histogram as available through planetoparse to plot."""
 	if hist.isempty():
 		print 'WARNING: Unable to plot, histogram is all-zero.'
 		return
+	if scale_by_widths:
+		data = empty_like(hist.data)
+		data[:] = hist.data
+		data[:,4] /= data[:,3] - data[:,2]
+	else:
+		data = hist.data
 	histdat = []
 	xedges = []
 	yedges = []
-	for line in hist.data:
+	for line in data:
 		if not line[0] in xedges:
 			xedges.append(line[0])
 		if not line[1] in xedges:
@@ -271,9 +277,11 @@ def plot_2d_hist(hist, logscale = True, *args, **kwargs):
 			fig.subplots_adjust()
 	cbar=plt.colorbar()
 	plt.title(title)
+	if scale_by_widths:
+		units += '/' + __parse_title(hist.params['Xaxis'])[1]
 	if logscale:
 		units = 'log ' + units
-	cbar.set_label(units)
+	cbar.set_label(__normalize_units(units))
 	plt.show(block = False)
 	return
 	
