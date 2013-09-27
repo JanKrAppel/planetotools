@@ -188,7 +188,8 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
 	__check_xy_units(xunits, yunits)
 	plt.xlabel(xlabel + ' / ' + xunits)
 	plt.ylabel(yunits)
-	plt.xscale('log')
+	if __is_logscale(hist.data[:,2]):
+		plt.xscale('log')
 	plt.yscale('log')
 	plt.legend(loc = 'best')
 	plt.show(block = False)
@@ -213,7 +214,8 @@ def plot_array_hist(array, scale_by = 1., *args, **kwargs):
 	#errors are not included, neither are binwidths:
 	elif array.shape[1] == 2:
 		plt.plot(array[:,0], array[:,1], *args, **kwargs)
-	plt.xscale('log')
+	if __is_logscale(array[:,2]):
+		plt.xscale('log')
 	plt.yscale('log')
 	plt.show(block = False)
 	return
@@ -253,6 +255,10 @@ def plot_2d_hist(hist, logscale = True, *args, **kwargs):
 	xedges.sort()
 	yedges.sort()
 	plt.pcolormesh(xedges, yedges, histdat.transpose(), *args, **kwargs)
+	if __is_logscale(xedges):
+		plt.xscale('log')
+	if __is_logscale(yedges):
+		plt.yscale('log')
 	plt.xlabel(hist.params['Xaxis'])
 	plt.ylabel(hist.params['Yaxis'])
 	fig = plt.gcf()
@@ -270,6 +276,12 @@ def plot_2d_hist(hist, logscale = True, *args, **kwargs):
 	cbar.set_label(units)
 	plt.show(block = False)
 	return
+	
+def __is_logscale(axis):
+	if (diff(diff(axis)) <= 1e-15).all():
+		return False
+	else:
+		return True
 	
 def plot_cosmonuc(results, logscale = True, *args, **kwargs):
 	"""Plots 2D histogram of cosmogenic nuclides. Pass the planetoparse instance to plot."""
@@ -392,25 +404,135 @@ def combine_histograms(*args):
 					res.primhists[particle] = histdata(copyhist = addthis.primhists[particle])
 				else:
 					res.primhists[particle] = __combine_single_hists(res.primhists[particle], addthis.primhists[particle])
+			#combine 1d hist list
+			for i in arange(0, len(addthis.hists1d)):
+				added = False
+				for j in arange(0, len(res.hists1d)):
+					addtitle = __parse_title(addthis.hists1d[i].params['Title'])[0]
+					restitle = __parse_title(res.hists1d[j].params['Title'])[0]
+					if addtitle == restitle and addthis.hists1d[i].detector == res.hists1d[j].detector:
+						res.hists2d[j] = __combine_single_hists(res.hists1d[j], addthis.hists1d[i])
+						added = True
+				if not added:
+					res.hists2d.append(histdata(copyhist = addthis.hists2d[i]))
+					added = True
+			#combine 2d hist list
+			for i in arange(0, len(addthis.hists2d)):
+				added = False
+				for j in arange(0, len(res.hists2d)):
+					addtitle = __parse_title(addthis.hists2d[i].params['Title'])[0]
+					restitle = __parse_title(res.hists2d[j].params['Title'])[0]
+					if addtitle == restitle and addthis.hists2d[i].detector == res.hists2d[j].detector:
+						res.hists2d[j] = __combine_single_hists(res.hists2d[j], addthis.hists2d[i])
+						added = True
+				if not added:
+					res.hists2d.append(histdata(copyhist = addthis.hists2d[i]))
+					added = True
+			#combine 2d upward fluxes
+			for particle in addthis.flux2d_up:
+				for detector in addthis.flux2d_up[particle]:
+					if not particle in res.flux2d_up:
+						res.flux2d_up[particle] = {}
+					if detector in res.flux2d_up[particle]:
+						for i in arange(0, len(addthis.flux2d_up[particle][detector])):
+							added = False
+							for j in arange(0, len(res.flux2d_up[particle][detector])):
+								addtitle = __parse_title(addthis.flux2d_up[particle][detector][i].params['Title'])[0]
+								restitle = __parse_title(res.flux2d_up[particle][detector][j].params['Title'])[0]
+								if addtitle == restitle:
+									res.flux2d_up[particle][detector][j] = __combine_single_hists(res.flux2d_up[particle][detector][j], addthis.flux2d_up[particle][detector][i])
+									added = True
+							if not added:
+								res.flux2d_up[particle][detector].append(histdata(copyhist = addthis.flux2d_up[particle][detector][i]))
+								added = True
+					else:
+						res.flux2d_up[particle][detector] = []
+						for hist in addthis.flux2d_up[particle][detector]:
+							res.flux2d_up[particle][detector].append(histdata(copyhist = hist))
+			#combine 2d downward fluxes
+			for particle in addthis.flux2d_down:
+				for detector in addthis.flux2d_down[particle]:
+					if not particle in res.flux2d_down:
+						res.flux2d_down[particle] = {}
+					if detector in res.flux2d_down[particle]:
+						for i in arange(0, len(addthis.flux2d_down[particle][detector])):
+							added = False
+							for j in arange(0, len(res.flux2d_down[particle][detector])):
+								addtitle = __parse_title(addthis.flux2d_down[particle][detector][i].params['Title'])[0]
+								restitle = __parse_title(res.flux2d_down[particle][detector][j].params['Title'])[0]
+								if addtitle == restitle:
+									res.flux2d_down[particle][detector][j] = __combine_single_hists(res.flux2d_down[particle][detector][j], addthis.flux2d_down[particle][detector][i])
+									added = True
+							if not added:
+								res.flux2d_down[particle][detector].append(histdata(copyhist = addthis.flux2d_down[particle][detector][i]))
+								added = True
+					else:
+						res.flux2d_down[particle][detector] = []
+						for hist in addthis.flux2d_down[particle][detector]:
+							res.flux2d_down[particle][detector].append(histdata(copyhist = hist))
+			#combine atmospheric edep hists
+			for i in arange(0, len(addthis.edep_atmo)):
+				added = False
+				for j in arange(0, len(res.edep_atmo)):
+					addtitle = __parse_title(addthis.edep_atmo[i].params['Title'])[0]
+					restitle = __parse_title(res.edep_atmo[j].params['Title'])[0]
+					if addtitle == restitle:
+						res.edep_atmo[j] = __combine_single_hists(res.edep_atmo[j], addthis.edep_atmo[i])
+						added = True
+				if not added:
+					res.edep_atmo.append(histdata(copyhist = addthis.edep_atmo[i]))
+					added = True
+			#combine soil edep hists
+			for i in arange(0, len(addthis.edep_soil)):
+				added = False
+				for j in arange(0, len(res.edep_soil)):
+					addtitle = __parse_title(addthis.edep_soil[i].params['Title'])[0]
+					restitle = __parse_title(res.edep_soil[j].params['Title'])[0]
+					if addtitle == restitle:
+						res.edep_soil[j] = __combine_single_hists(res.edep_soil[j], addthis.edep_soil[i])
+						added = True
+				if not added:
+					res.edep_soil.append(histdata(copyhist = addthis.edep_soil[i]))
+					added = True
 		return res
 	else:
 		return args[0]
 		
 def __combine_single_hists(hist1, hist2):
 	from planetoparse import histdata
-	res = histdata(copyhist = hist1)
-	if not (res.data[:,0] == hist2.data[:,0]).all() or not (res.data[:,1] == hist2.data[:,1]).all() or not (res.data[:,2] == hist2.data[:,2]).all():
-		print 'ERROR: Unable to combine histograms, binning is different.'
+	if not hist1.type == hist2.type:
+		print 'ERROR: Unable to combine histograms, incompatible dimensions'
 		return hist1
-	xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
-	yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
-	xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
-	yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
-	if not (xunits1 == xunits2 and yunits1 == yunits2):
-		print 'ERROR: Unable to combine histograms, units mismatch.'
-	res.data[:,3] += hist2.data[:,3]
-	res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
-	return res
+	elif hist1.type == hist2.type == 'Histogram1D':
+		res = histdata(copyhist = hist1)
+		if not (res.data[:,0] == hist2.data[:,0]).all() or not (res.data[:,1] == hist2.data[:,1]).all() or not (res.data[:,2] == hist2.data[:,2]).all():
+			print 'ERROR: Unable to combine histograms, binning is different'
+			return hist1
+		xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+		yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+		xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+		yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+		if not (xunits1 == xunits2 and yunits1 == yunits2):
+			print 'ERROR: Unable to combine histograms, units mismatch.'
+		res.data[:,3] += hist2.data[:,3]
+		res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
+		return res
+	elif hist1.type == hist2.type == 'Histogram2D':
+		res = histdata(copyhist = hist1)
+		if not (res.data[:,0] == hist2.data[:,0]).all() or not (res.data[:,1] == hist2.data[:,1]).all() or not (res.data[:,2] == hist2.data[:,2]).all() or not (res.data[:,3] == hist2.data[:,3]).all():
+			print 'ERROR: Unable to combine histograms, binning is different'
+			return hist1
+		xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+		yunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+		zunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+		xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+		yunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+		zunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+		if not (xunits1 == xunits2 and yunits1 == yunits2 and zunits1 == zunits2):
+			print 'ERROR: Unable to combine histograms, units mismatch.'
+		res.data[:,4] += hist2.data[:,4]
+		res.data[:,5] = sqrt(res.data [:,5]**2 + hist2.data[:,5]**2)
+		return res
 		
 def plot_primaries(results, *args, **kwargs):
 	"""Plot all primary particle fluxes in a result."""
