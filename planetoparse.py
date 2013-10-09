@@ -647,10 +647,14 @@ class planetoparse:
 		for param in self.params:
 			outfile.write(param + ' : ' + str(self.params[param]) + '\n')
 		self.__save_hist_to_ascii(self.cosmonuc, outfile)
-		for hist in self.flux2d_up:
-			self.__save_hist_to_ascii(hist, outfile)
-		for hist in self.flux2d_down:
-			self.__save_hist_to_ascii(hist, outfile)
+		for particle in self.flux2d_up:
+			for detector in self.flux2d_up[particle]:
+				for hist in self.flux2d_up[particle][detector]:
+					self.__save_hist_to_ascii(hist, outfile)
+		for particle in self.flux2d_down:
+			for detector in self.flux2d_down[particle]:
+				for hist in self.flux2d_down[particle][detector]:
+					self.__save_hist_to_ascii(hist, outfile)
 		for hist in self.hists2d:
 			self.__save_hist_to_ascii(hist, outfile)
 		for particle in self.flux_up:
