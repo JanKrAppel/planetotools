@@ -180,13 +180,19 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
 	title, units = __parse_title(hist.params['Title'])
 	plt.title(title)
 	xlabel, xunits = __parse_title(hist.params['Xaxis'])
-	xunits = __normalize_units(xunits)
-	if scale_by_width:
+	if xlabel is None:
+		xlabel = hist.params['Xaxis']
+	else:
+		xunits = __normalize_units(xunits)
+		xlabel += ' / ' + xunits
+	if scale_by_width and not xunits is None:
 		yunits = __normalize_units(units + '/' + xunits)
+	elif scale_by_width and xunits is None:
+		yunits = __normalize_units(units)
 	else:
 		yunits = __normalize_units(units)
 	__check_xy_units(xunits, yunits)
-	plt.xlabel(xlabel + ' / ' + xunits)
+	plt.xlabel(xlabel)
 	plt.ylabel(yunits)
 	if __is_logscale(hist.data[:,2]):
 		plt.xscale('log')
@@ -632,7 +638,7 @@ def integrate_fluxhist(histogram, limits = None):
 			mask = (histogram['x'] >= limits[0]) * (histogram['x'] <= limits[1])
 		else:
 			mask = ones(len(histogram['x']), dtype = bool)
-		return sum(histogram['y'][mask] * histogram['bin_widths'][mask])
+		return sum(histogram['y'][mask])
 		
 def integrate_2d_fluxhist(histogram, xlimits = None, ylimits = None):
 	"""Integrates the flux stored in the given 2D histogram. Pass a tuple (Emin, Emax) as xlimits or ylimits keyword arguments to set the integration range."""
@@ -646,4 +652,105 @@ def integrate_2d_fluxhist(histogram, xlimits = None, ylimits = None):
 		ymask = ones(len(histogram.data), dtype = bool)
 	mask = xmask * ymask
 	return sum(histogram.data[:,4][mask])
+	
+def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
+	"""Project data in a 2D histogram onto either the X or the Y axis and return the resulting 1D histogram."""
+	if not axis in ['x', 'y']:
+		print 'ERROR: Invalid axis selection'
+		return None
+	if not histogram.type == 'Histogram2D':
+		print 'ERROR: Cannot project 1D histograms'
+		return
+	#apply selected limits
+	if not xlimits is None:
+		xmask = (histogram.data[:,0] >= xlimits[0]) * (histogram.data[:,1] <= xlimits[1])
+	else:
+		xmask = ones(len(histogram.data), dtype = bool)
+	if not ylimits is None:
+		ymask = (histogram.data[:,2] >= ylimits[0]) * (histogram.data[:,3] <= ylimits[1])
+	else:
+		ymask = ones(len(histogram.data), dtype = bool)
+	mask = xmask * ymask
+	data = empty_like(histogram.data)
+	data[:] = histogram.data
+	data = data[mask]
+	#find data binning for given axis
+	if axis == 'x':
+		index_lower = 0
+		index_upper = 1
+	else:
+		index_lower = 2
+		index_upper = 3
+	binslower = []
+	binsupper = []
+	for line in data:
+		if not line[index_lower] in binslower:
+			binslower.append(line[index_lower])
+		if not line[index_upper] in binsupper:
+			binsupper.append(line[index_upper])
+	binslower = array(sort(binslower))
+	binsupper = array(sort(binsupper))
+	#build data array
+	bindata = zeros(len(binslower))
+	binerrors = zeros(len(binslower))
+	for line in data:
+		index = -1
+		for i in arange(0, len(bindata)):
+			if line[index_lower] == binslower[i] and line[index_upper] == binsupper[i]:
+				index = i
+				break
+		if not index == -1:
+			bindata[index] += line[4]
+			binerrors[index] = sqrt(binerrors[index]**2 + line[5]**2)
+		else:
+			print 'WARNING: Skipping data point, bin not found'
+	binmiddles = binslower + (binsupper - binslower) / 2
+	resdata = column_stack((binslower, binsupper, binmiddles, bindata, binerrors))
+	#build result histdata object
+	res = histdata()
+	res.data = resdata
+	#build and set parameter dict
+	for entry in histogram.params:
+		if 'axis' in entry:
+			if entry == axis.upper() + 'axis':
+				res.params['Xaxis'] = '' + histogram.params[entry]
+		else:
+			if type(histogram.params[entry]) == str:
+				res.params[entry] = '' + histogram.params[entry]
+			else:
+				res.params[entry] = float64(0.) + histogram.params[entry]
+	#build and set title string
+	title = ''
+	#add information about limits applied to data
+	limits_string = ''
+	if not xlimits is None:
+		limits_string += ', '
+		tmp1, tmp2 = __parse_title(histogram.params['Xaxis'])
+		if tmp1 is None:
+			xlabel = tmp2
+		else:
+			xlabel = tmp1
+		limits_string += str(amin(xlimits)) + '<=' + xlabel + '<=' + str(amax(xlimits))
+	if not ylimits is None:
+		limits_string += ', '
+		tmp1, tmp2 = __parse_title(histogram.params['Yaxis'])
+		if tmp1 is None:
+			ylabel = tmp2
+		else:
+			ylabel = tmp1
+		limits_string += str(amin(ylimits)) + '<=' + ylabel + '<=' + str(amax(ylimits))
+	tmp1, tmp2 = __parse_title(histogram.params[axis.upper() + 'axis'])
+	if tmp1 is None:
+		axislabel = tmp2
+	else:
+		axislabel = tmp1	
+	title += 'Flux vs ' + axislabel + ' of ' + histogram.particle 
+	title += limits_string
+	title += '[' + __parse_title(histogram.params['Title'])[1] + ']'
+	res.params['Title'] = title
+	#set remaining parameters
+	res.detector = 0 + histogram.detector
+	res.particle = '' + histogram.particle
+	res.type = 'Histogram1D'
+	return res
 
