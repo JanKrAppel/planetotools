@@ -16,10 +16,10 @@ class histdata:
 	"""Provides histogram data to plotting routines. Allows scaling and unscaling per nucleus and per sterad, as well as saving and loading to and from Planetocosmics flux data definition files."""
 	
 	def __init__(self, copyhist = None):
-		self.type = None
-		self.title = None
+		self.type = ''
+		self.title = ''
 		self.params = {}
-		self.data = None
+		self.data = ''
 		self.particle = ''
 		self.detector = -1
 		self.scaled_per_nuc = False

@@ -548,6 +548,16 @@ def __combine_single_hists(hist1, hist2):
 		res.data[:,5] = sqrt(res.data [:,5]**2 + hist2.data[:,5]**2)
 		return res
 		
+def add_histograms(*args):
+	"""Add single histograms."""
+	if len(args) > 1:
+		res = histdata(copyhist = args[0])
+		for hist in args[1:]:
+			res = __combine_single_hists(res, hist)
+		return res
+	else:
+		return args[0]
+		
 def plot_primaries(results, *args, **kwargs):
 	"""Plot all primary particle fluxes in a result."""
 	for particle in results.primhists:
