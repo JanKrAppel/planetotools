@@ -30,6 +30,7 @@ ANGLE_UNITS = ['sr']
 WEIGHT_UNITS = ['nuc']
 UNIT_ORDER = ['count', 'area', 'time', 'angle', 'energy', 'weight']
 UNIT_REPLACE = {'nb particles': 'particles'}
+ENERGY_SCALERS = {None: 1, 'GeV': 0.001, 'MeV': 1, 'eV': 1000000.0, 'keV': 1000.0}
 
 def __normalize_units(units):
 	units = units.split('/')
@@ -151,7 +152,7 @@ def plot_edep_profile(hist, *args, **kwargs):
 	plt.show(block = False)
 	return
 	
-def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = True, xlims = (-inf, inf), *args, **kwargs):
+def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = True, xlims = (-inf, inf), energy_scale = None, *args, **kwargs):
 	"""Plots 1D histograms. Pass the histogram as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
 	if hist.isempty():
 		print 'WARNING: Unable to plot, histogram is all-zero.'
@@ -170,6 +171,17 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
 		kwargs.pop('capsize')
 	mask = (hist.data[:,2] > xlims[0]) * (hist.data[:,2] < xlims[1])
 	data = hist.data[mask]
+	if not energy_scale in ENERGY_SCALERS:
+		print 'WARNING: Invalid energy scale specified, defaulting to MeV'
+		energy_scale = None
+	data[:,:3] *= ENERGY_SCALERS[energy_scale]
+	params = {}
+	for entry in hist.params:
+		params[entry] = hist.params[entry]
+	if not energy_scale is None:
+		tmp = __parse_title(params['Xaxis'])
+		if not tmp[0] is None:
+			params['Xaxis'] = tmp[0] + '[' + energy_scale + ']'
 	if scale_by_width:
 		bin_width = data[:,1] - data[:,0]
 		if (bin_width == 0.).all():
@@ -179,11 +191,11 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
 	else:
 		bin_width = ones(len(data))
 	plt.errorbar(data[:,2], data[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = data[:,4] * scale_by / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
-	title, units = __parse_title(hist.params['Title'])
+	title, units = __parse_title(params['Title'])
 	plt.title(title)
-	xlabel, xunits = __parse_title(hist.params['Xaxis'])
+	xlabel, xunits = __parse_title(params['Xaxis'])
 	if xlabel is None:
-		xlabel = hist.params['Xaxis']
+		xlabel = params['Xaxis']
 	else:
 		xunits = __normalize_units(xunits)
 		xlabel += ' / ' + xunits
