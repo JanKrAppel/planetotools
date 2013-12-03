@@ -125,7 +125,7 @@ def __get_daily_mean_dustdepth(date, dustscen, lon, lat):
 		loct.append(extvar[5])
 	return mean(dust), amax(dust), amin(dust), mean(ls), mean(loct)
 
-def plot_yearly_dust(year, dust, lon = 0., lat = 0.):
+def plot_yearly_dust(year, dust, lon = 0., lat = 0., plot_only = None, show_marstime = True, *args, **kwargs):
 	"""Plots the daily mean, min and max values for the dust optical depth for the given year and dust scenario."""
 	#parse dust scenario, if needed
 	if type(dust) == str:
@@ -147,9 +147,47 @@ def plot_yearly_dust(year, dust, lon = 0., lat = 0.):
 			dustcurve.append(dustmean)
 			maxcurve.append(dustmax)
 			mincurve.append(dustmin)
-	plt.plot(dustcurve, 'bo', label = 'mean')
-	plt.plot(maxcurve, 'ro', label = 'max')
-	plt.plot(mincurve, 'go', label = 'min')
+	if plot_only is None:
+		if 'label' in kwargs:
+			label = kwargs['label']
+			kwargs.pop('label')
+		else:
+			label = 'mean'
+		plt.plot(dustcurve, 'bo', label = label, *args, **kwargs)
+		if 'label' in kwargs:
+			label = kwargs['label']
+			kwargs.pop('label')
+		else:
+			label = 'max'
+		plt.plot(maxcurve, 'ro', label = label, *args, **kwargs)
+		if 'label' in kwargs:
+			label = kwargs['label']
+			kwargs.pop('label')
+		else:
+			label = 'min'
+		plt.plot(mincurve, 'go', label = label, *args, **kwargs)
+	else:
+		if 'mean' in plot_only:
+			if 'label' in kwargs:
+				label = kwargs['label']
+				kwargs.pop('label')
+			else:
+				label = 'mean'
+			plt.plot(dustcurve, 'o', label = label, *args, **kwargs)
+		if 'max' in plot_only:
+			if 'label' in kwargs:
+				label = kwargs['label']
+				kwargs.pop('label')
+			else:
+				label = 'max'
+			plt.plot(maxcurve, 'o', label = label, *args, **kwargs)
+		if 'min' in plot_only:
+			if 'label' in kwargs:
+				label = kwargs['label']
+				kwargs.pop('label')
+			else:
+				label = 'min'
+			plt.plot(mincurve, 'o', label = label, *args, **kwargs)
 	plt.legend(loc = 'best')
 	#Earth time xaxis:
 	locs, labels = plt.xticks()
@@ -159,16 +197,20 @@ def plot_yearly_dust(year, dust, lon = 0., lat = 0.):
 	plt.xticks(locs, newlabels)
 	plt.xlabel('Day/Month')
 	#Mars time xaxis:
-	marstime = array(marstime)
-	newlabels = marstime[int64(locs)]
-	plt.gca().twiny() #get shared y axis -> second x axis
-	plt.xticks(locs, newlabels)
-	plt.xlabel('Mars solar longitude')
+	if show_marstime:
+		marstime = array(marstime)
+		newlabels = marstime[int64(locs)]
+		plt.gca().twiny() #get shared y axis -> second x axis
+		plt.xticks(locs, newlabels)
+		plt.xlabel('Mars solar longitude')
 	#set ylabel and title
 	plt.ylabel('Dust optical depth')
 	for value in dust_scenarios:
 		if dust_scenarios[value] == dust:
 			dustscen = value
-	plt.suptitle('Dust optical depth variations for ' + str(year) + ', scenario ' + dustscen)
+	if show_marstime:
+		plt.suptitle('Dust optical depth variations for ' + str(year) + ', scenario ' + dustscen)
+	else:
+		plt.title('Dust optical depth variations for ' + str(year) + ', scenario ' + dustscen)
 	return	
 
