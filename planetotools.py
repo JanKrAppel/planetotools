@@ -428,9 +428,22 @@ def combine_histograms(*args):
 						res.flux_down[particle][detector] = histdata(copyhist = addthis.flux_down[particle][detector])
 			#combine primary fluxes
 			for particle in addthis.primhists:
-				res.primhists[particle] = []
-				for hist in addthis.primhists[particle]:
-					res.primhists[particle].append(histdata(copyhist = addthis.primhists[particle]))
+				if not particle in res.primhists:
+					res.primhists[particle] = []
+					for hist in addthis.primhists[particle]:
+						res.primhists[particle].append(histdata(copyhist = hist))
+				else:
+					for i in arange(0, len(addthis.primhists[particle])):
+						added = False
+						for j in arange(0, len(res.primhists[particle])):
+							addtitle = __parse_title(addthis.primhists[particle][i].params['Title'])[0]
+							restitle = __parse_title(res.primhists[particle][j].params['Title'])[0]
+							if addtitle == restitle:
+								res.edep_atmo[j] = __combine_single_hists(res.primhists[particle][j], addthis.primhists[particle][i])
+								added = True
+						if not added:
+							res.edep_atmo.append(histdata(copyhist = addthis.primhists[particle][i]))
+							added = True
 			#combine 1d hist list
 			for i in arange(0, len(addthis.hists1d)):
 				added = False
