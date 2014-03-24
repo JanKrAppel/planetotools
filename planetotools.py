@@ -428,10 +428,9 @@ def combine_histograms(*args):
 						res.flux_down[particle][detector] = histdata(copyhist = addthis.flux_down[particle][detector])
 			#combine primary fluxes
 			for particle in addthis.primhists:
-				if not particle in res.primhists:
-					res.primhists[particle] = histdata(copyhist = addthis.primhists[particle])
-				else:
-					res.primhists[particle] = __combine_single_hists(res.primhists[particle], addthis.primhists[particle])
+				res.primhists[particle] = []
+				for hist in addthis.primhists[particle]:
+					res.primhists[particle].append(histdata(copyhist = addthis.primhists[particle]))
 			#combine 1d hist list
 			for i in arange(0, len(addthis.hists1d)):
 				added = False
