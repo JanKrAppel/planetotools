@@ -67,6 +67,7 @@ class mcdparse:
 		return
 		
 	def __build_shield_depth(self):
+		#FIXME: Currently broken, off by factor of 100
 		res = []
 		for i in arange(0, len(self.data['xz']), 1):
 			if i == 0:
@@ -242,6 +243,7 @@ class atmoparse:
 		return
 		
 	def __build_shield_depth(self):
+		#FIXME: Currently broken, off by factor of 100
 		res = []
 		for i in arange(0, len(self.data['xz']), 1):
 			if i == 0:
