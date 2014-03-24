@@ -408,8 +408,11 @@ class planetoparse:
 		count += tmpcount
 		print 'Other 2D histograms:', len(self.hists2d)
 		count += len(self.hists2d)
-		print 'Primaries histograms:', len(self.primhists)
-		count += len(self.primhists)
+		tmpcount = 0
+		for particle in self.primhists:
+			tmpcount += len(self.primhists[particle])
+		print 'Primaries histograms:', tmpcount
+		count += tempcount
 		print 'Atmosphere energy deposition histograms:', len(self.edep_atmo)
 		count += len(self.edep_atmo)
 		print 'Soil energy deposition histograms:', len(self.edep_soil)
@@ -476,9 +479,10 @@ class planetoparse:
 				count += 1
 		#primaries:
 		for particle in self.primhists:
-			if self.primhists[particle].isempty():
-				message += '\tprimhists, particle ' + particle + '\n'
-				count += 1
+			for hist in self.primhists[particle]:
+				if hist.isempty():
+					message += '\tprimhists, particle ' + particle + '\n'
+					count += 1
 		#flux_down:
 		for particle in self.flux_down:
 			for detector in self.flux_down[particle]:
@@ -585,7 +589,9 @@ class planetoparse:
 			res.detector = 0
 			#fix primary particle flux being too low:
 			res.data[:,3:] *= 2.
-			self.primhists[particle] = res
+			if not particle in self.primhists:
+				self.primhists[particle] = []
+			self.primhists[particle].append(res)
 		else:
 			self.hists1d.append(res)
 		return infile, line
@@ -668,7 +674,8 @@ class planetoparse:
 		for hist in self.edep_atmo:
 			self.__save_hist_to_ascii(hist, outfile)
 		for particle in self.primhists:
-			self.__save_hist_to_ascii(self.primhists[particle], outfile)
+			for hist in self.primhists[particle]:
+				self.__save_hist_to_ascii(hist, outfile)
 		for hist in self.hists1d:
 			self.__save_hist_to_ascii(hist, outfile)
 		outfile.close()
@@ -681,11 +688,12 @@ class planetoparse:
 			print 'ERROR: Need particle weight for scaling.'
 			return
 		if particle in self.primhists:
-			if scale:
-				self.primhists[particle].scale_per_nuc(weight)
-			else:
-				self.primhists[particle].unscale_per_nuc()
-			count += 1
+			for hist in self.primhists[particle]:
+				if scale:
+					hist.scale_per_nuc(weight)
+				else:
+					hist.unscale_per_nuc()
+				count += 1
 		if particle in self.flux_up:
 			for detector in self.flux_up[particle]:
 				if scale:
@@ -711,11 +719,12 @@ class planetoparse:
 		"""Sets (scale = True) or unsets (scale = False) per steradian scaling for all flux histograms."""
 		count = 0
 		for particle in self.primhists:
-			if scale:
-				self.primhists[particle].scale_per_sterad()
-			else:
-				self.primhists[particle].unscale_per_sterad()
-			count += 1
+			for hist in self.primhists[particle]:
+				if scale:
+					hist.scale_per_sterad()
+				else:
+					hist.unscale_per_sterad()
+				count += 1
 		for particle in self.flux_up:
 			for detector in self.flux_up[particle]:
 				if scale:
