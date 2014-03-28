@@ -22,10 +22,10 @@ def __get_units_from_label(label):
 	else:
 		return res[1]
 
-ENERGY_UNITS = ['MeV', 'keV', 'GeV']	
+ENERGY_UNITS = ['MeV', 'keV', 'GeV', 'eV']	
 AREA_UNITS = ['cm2', 'm2', 'km2']
 TIME_UNITS = ['h', 'm', 's']
-COUNT_UNITS = ['nb particles']
+COUNT_UNITS = ['nb particles', '#']
 ANGLE_UNITS = ['sr']
 WEIGHT_UNITS = ['nuc']
 UNIT_ORDER = ['count', 'area', 'time', 'angle', 'energy', 'weight']
