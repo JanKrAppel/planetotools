@@ -79,9 +79,9 @@ def parse_file(file):
             #look for unset commands:
             values = re.search('^unset\s+(.*?)$', line)
             if not values is None:
-            	if values.group(1).lower() in params:
-		            print 'WARNING: Unset parameter ' + values.group(1).lower()
-		            params.pop(values.group(1).lower())
-		            matched = True
+                if values.group(1).lower() in params:
+                    print 'WARNING: Unset parameter ' + values.group(1).lower()
+                    params.pop(values.group(1).lower())
+                    matched = True
     file.close()
     return params
