@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""Contains two class definitions:
+histdata contains histogram data and metadata as well as some functionality
+for scaling, saving and loading histograms.
+planetoparse is the central planetotools data class, it parses Planetocosmics
+ASCII output files, stores the histograms in histdata objects in a structured
+way and provides scaling, saving and loading functionality."""
 
 from numpy import *
 import re
@@ -6,14 +12,19 @@ import cPickle
 
 DELIMITER = '//////////////////////////////////////////////////\n'
 PARAMS_PATTERN = '(\w*)\s*:\s*(.*)\n'
-DEFAULT_SORT_CONFIG = {'flux_up': ['UpHist', '2'], 'flux_down': ['DownHist', '1'], 'flux2d_up': ['UpPosHist', '2'], 'flux2d_down': ['DownPosHist', '1'], }
+DEFAULT_SORT_CONFIG = {'flux_up': ['UpHist', '2'], 
+                       'flux_down': ['DownHist', '1'], 
+                       'flux2d_up': ['UpPosHist', '2'],
+                       'flux2d_down': ['DownPosHist', '1'], }
 
 ####################
 #histdata class definition
 ####################
 
 class histdata:
-    """Provides histogram data to plotting routines. Allows scaling and unscaling per nucleus and per sterad, as well as saving and loading to and from Planetocosmics flux data definition files."""
+    """Provides histogram data to plotting routines. Allows scaling and 
+    unscaling per nucleus and per sterad, as well as saving and loading 
+    to and from Planetocosmics flux data definition files."""
     
     def __init__(self, copyhist = None):
         self.type = ''
@@ -51,10 +62,11 @@ class histdata:
         if not self.scaled_per_nuc:
             if not weight is None:
                 self.nuc_weight = weight
-            self.data[:,:3] /= self.nuc_weight
-            self.data[:,3:] *= self.nuc_weight
+            self.data[:, :3] /= self.nuc_weight
+            self.data[:, 3:] *= self.nuc_weight
             titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
-            self.params['Xaxis'] = titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
+            self.params['Xaxis'] = \
+                titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
             self.scaled_per_nuc = True
             return True
         else:
@@ -63,8 +75,8 @@ class histdata:
     def unscale_per_nuc(self):
         """Remove energy scaling per nucleon from histogram."""
         if self.scaled_per_nuc:
-            self.data[:,:3] *= self.nuc_weight
-            self.data[:,3:] /= self.nuc_weight
+            self.data[:, :3] *= self.nuc_weight
+            self.data[:, 3:] /= self.nuc_weight
             self.params['Xaxis'] = re.sub('/nuc', '', self.params['Xaxis'])
             self.scaled_per_nuc = False
             return True
@@ -74,10 +86,11 @@ class histdata:
     def scale_per_sterad(self):
         """Scale histogram to Energy/sr."""
         if not self.scaled_per_sterad:
-            self.data[:,3] /= 2*pi
-            self.data[:,4] /= 2*pi
+            self.data[:, 3] /= 2*pi
+            self.data[:, 4] /= 2*pi
             titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
-            self.params['Xaxis'] = titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
+            self.params['Xaxis'] = \
+                titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
             self.scaled_per_sterad = True
             return True
         else:
@@ -86,8 +99,8 @@ class histdata:
     def unscale_per_sterad(self):
         """Remove energy scaling per sr from histogram."""
         if self.scaled_per_sterad:
-            self.data[:,3] *= 2*pi
-            self.data[:,4] *= 2*pi
+            self.data[:, 3] *= 2*pi
+            self.data[:, 4] *= 2*pi
             self.params['Xaxis'] = re.sub('/sr', '', self.params['Xaxis'])
             self.scaled_per_sterad = False
             return True
@@ -95,7 +108,8 @@ class histdata:
             return False
             
     def isempty(self):
-        """Returns true if the histogram is all-zero, false if it is not. None is returned when no valid histogram is loaded."""
+        """Returns true if the histogram is all-zero, false if it is not.
+        None is returned when no valid histogram is loaded."""
         if self.type == 'Histogram1D':
             return self.__histogram_1d_empty()
         elif self.type == 'Histogram2D':
@@ -104,15 +118,19 @@ class histdata:
             return None
             
     def __histogram_2d_empty(self):
-        return (self.data[:,4] == zeros(len(self.data[:,4]))).all()
+        """Checks if a 2D histogram is empty, returns boolean"""
+        return (self.data[:, 4] == zeros(len(self.data[:, 4]))).all()
 
     def __histogram_1d_empty(self):
-        return (self.data[:,3] == zeros(len(self.data[:,3]))).all()
+        """Checks if a 1D histogram is empty, returns boolean"""
+        return (self.data[:, 3] == zeros(len(self.data[:, 3]))).all()
 
     def save_as_flux(self, filename):
-        """Save the histogram in a format that can be read in Planetocosmics for primary flux definition. Pass the output filename."""
+        """Save the histogram in a format that can be read in Planetocosmics
+        for primary flux definition. Pass the output filename."""
         if self.type == 'Histogram1D':
             def get_unit(title):
+                """Parses title information and returns the units."""
                 titleparse = re.match('(.*)\s*\[(.*)\]', title)
                 if not titleparse is None:
                     return titleparse.group(2)
@@ -130,11 +148,13 @@ class histdata:
             outfile.write('\\interpolation{log}\n')
             outfile.write('\\data\n')
             for i in arange(0, len(self.data), 1):
-                outfile.write(str(self.data[i, 2]) + '\t' + str(self.data[i, 3]) + '\n')
+                outfile.write(str(self.data[i, 2]) + '\t' \
+                    + str(self.data[i, 3]) + '\n')
             outfile.close()
             return
         else:
-            print 'ERROR: Can only save 1D histogram data as flux definition.'
+            print 'ERROR: Can only save 1D histogram data as flux \
+                definition.'
             return
             
     def save_data(self, filename):
@@ -143,6 +163,8 @@ class histdata:
         return
             
     def __parse_params(self, line):
+        """Parses parameter information. Returns name, value pair if found,
+        None, None pair if not found."""
         parsed = re.match('\\\\(\w.*)\{(.*)\}', line)
         if parsed:
             name = parsed.group(1)
@@ -155,7 +177,8 @@ class histdata:
             return None, None
 
     def load_from_flux(self, filename):
-        """Load the histogram data from a file containing Planetocosmics primary flux definitions."""
+        """Load the histogram data from a file containing Planetocosmics
+        primary flux definitions."""
         infile = open(filename, 'r')
         line = infile.readline()
         tmpparams = {}
@@ -169,18 +192,19 @@ class histdata:
                         tmpparams[name] = value
                     line = infile.readline()
             elif '\\data' in line:
+                line = infile.readline()
+                while not line[:-1] == '':
+                    tmpdata.append(array(line.split(), dtype = float64))
                     line = infile.readline()
-                    while not line[:-1] == '':
-                        tmpdata.append(array(line.split(), dtype = float64))
-                        line = infile.readline()
-                    tmpdata = array(tmpdata)
+                tmpdata = array(tmpdata)
         infile.close()
         #set type, particle and title
         self.type = 'Histogram1D'
         self.title = '/PRIMARY/' + tmpparams['particle'] + '/1'
         self.particle = 'primary ' + tmpparams['particle']
         #set other params
-        self.params['Title'] = 'Primary flux of ' + tmpparams['particle'] + ' [' + re.sub('#', 'nb particles', tmpparams['flux_unit']) + ']'
+        self.params['Title'] = 'Primary flux of ' + tmpparams['particle'] +\
+            ' [' + re.sub('#', 'nb particles', tmpparams['flux_unit']) + ']'
         self.params['Xaxis'] = 'Energy[' + tmpparams['energy_unit'] + ']'
         self.params['filename'] = filename
         self.params['interpolation'] = tmpparams['interpolation']
@@ -197,10 +221,13 @@ class histdata:
         return
         
     def save_as_gps(self, filename, shape = ''):
-        """Saves the histogram information in a set of Geant4 GPS gun commands that will recreate this spectrum."""
+        """Saves the histogram information in a set of Geant4 GPS gun
+        commands that will recreate this spectrum."""
         macrofile = open(filename, 'w')
-        macrofile.write('#planetoparse generated GPS source setup for ' + self.particle + '\n')
-        macrofile.write('/gps/source/add ' + str(self.params['normalisation_factor']) + '\n')
+        macrofile.write('#planetoparse generated GPS source setup for ' +\
+            self.particle + '\n')
+        macrofile.write('/gps/source/add ' +\
+            str(self.params['normalisation_factor']) + '\n')
         macrofile.write('/gps/particle ' + self.particle + '\n')
         #shape config:
         if not shape == '':
@@ -231,14 +258,19 @@ class histdata:
         #first point:
         macrofile.write('/gps/hist/point ' + str(self.data[0, 0]) + '\n')
         for i in arange(0, len(self.data)):
-            macrofile.write('/gps/hist/point ' + str(self.data[i, 1]) + ' ' + str(self.data[i, 3] / (self.data[i, 1] - self.data[i, 0])) + '\n')
+            macrofile.write('/gps/hist/point ' + str(self.data[i, 1]) +\
+                ' ' + str(self.data[i, 3] / \
+                (self.data[i, 1] - self.data[i, 0])) + '\n')
         macrofile.close()
         return
             
     def save_as_2d_gps(self, filename, shape = ''):
-        """Saves the histogram information in a set of Geant4 GPS gun commands that will recreate this spectrum. Only really works with Ekin vs cos theta histograms."""
+        """Saves the histogram information in a set of Geant4 GPS gun
+        commands that will recreate this spectrum. Only really works
+        with Ekin vs cos theta histograms."""
         macrofile = open(filename, 'w')
-        macrofile.write('#planetoparse generated 2D GPS source setup for ' + self.particle + '\n\n')
+        macrofile.write('#planetoparse generated 2D GPS source setup for ' +\
+        self.particle + '\n\n')
         #shape config:
         if not shape == '':
             if shape == 'roveronmars':
@@ -258,13 +290,15 @@ class histdata:
         num_ebins = len(xedges) - 1
         #compute source intensity:
         intensity = self.params['normalisation_factor']
-        mask = (self.data[:,2] < 0.) * (self.data[:,3] < 0.)        
-        total_flux = sum(self.data[:,4][mask] / (self.data[:,1][mask] - self.data[:,0][mask]))
+        mask = (self.data[:, 2] < 0.) * (self.data[:, 3] < 0.)        
+        total_flux = sum(self.data[:, 4][mask] / \
+            (self.data[:, 1][mask] - self.data[:, 0][mask]))
         #write source definition
         for i in arange(0, len(self.data), num_ebins):
             data = self.data[i:i + num_ebins]
-            mask = (data[:,2] < 0.) * (data[:,3] < 0.)
-            flux = sum(data[:,4][mask] / (data[:,1][mask] - data[:,0][mask]))
+            mask = (data[:, 2] < 0.) * (data[:, 3] < 0.)
+            flux = sum(data[:, 4][mask] / (data[:, 1][mask] -\
+                data[:, 0][mask]))
             source_intensity = intensity * flux / total_flux
             if not source_intensity == 0.:
                 string = self.__gen_1d_gps(data, shape, source_intensity)
@@ -274,6 +308,8 @@ class histdata:
         return
         
     def __gen_1d_gps(self, hist, shape, intensity):
+        """Generates a representation of the histogram data as a 1D Geant4
+        GPS gun command sequence."""
         #make data copy
         data = empty_like(hist)
         data[:] = hist            
@@ -291,15 +327,16 @@ class histdata:
         res += '/gps/ang/type user\n'
         res += '/gps/hist/type theta\n'
         #prepare the data array:
-        mask = (data[:,2] < 0.) * (data[:,3] < 0.)
+        mask = (data[:, 2] < 0.) * (data[:, 3] < 0.)
         data = data[mask]
-        data[:,2] = arccos(data[:,2]) - pi/2
-        data[:,3] = arccos(data[:,3]) - pi/2
-        data = data[data[:,3].argsort()]
+        data[:, 2] = arccos(data[:, 2]) - pi/2
+        data[:, 3] = arccos(data[:, 3]) - pi/2
+        data = data[data[:, 3].argsort()]
         #first point:
         res += '/gps/hist/point ' + str(data[0, 3]) + '\n'
         for i in arange(0, len(data)):
-            res += '/gps/hist/point ' + str(data[i, 2]) + ' ' + str(data[i, 4] / (ehigh - elow)) + '\n'
+            res += '/gps/hist/point ' + str(data[i, 2]) + ' ' +\
+                str(data[i, 4] / (ehigh - elow)) + '\n'
         return res
 
 ####################
@@ -307,7 +344,9 @@ class histdata:
 ####################
 
 class planetoparse:
-    """Parses Planetocosmics ASCII output for interactive use. Initialize with filename to parse, see members for parse results. Save and load saves and loads the data to and from a file."""
+    """Parses Planetocosmics ASCII output for interactive use. Initialize 
+    with filename to parse, see members for parse results. Save and load 
+    saves and loads the data to and from a file."""
     
     def __init__(self, filename = None, verbosity = 0, sort_config = None):
         self.primaries = 0
@@ -327,13 +366,13 @@ class planetoparse:
             try:
                 from planetoparse_cfg import sort_config
             except ImportError:
-                sort_config = DEFAULT_SORT_CONFIG
+                self.sort_config = DEFAULT_SORT_CONFIG
         sort_conf_keys = sort_config.keys()
         sort_conf_keys.sort()
         req_keys = DEFAULT_SORT_CONFIG.keys()
         req_keys.sort()
         if not sort_conf_keys == req_keys:
-            self.sort_config == DEFAULT_SORT_CONFIG
+            self.sort_config = DEFAULT_SORT_CONFIG
         else:
             self.sort_config = sort_config
         if not filename is None:
@@ -341,6 +380,8 @@ class planetoparse:
         return
         
     def __parse_params(self, line):
+        """Parses parameter information. Returns name, value pair if found,
+        None, None pair if not found."""
         parsed = re.match(PARAMS_PATTERN, line)
         if parsed:
             name = parsed.group(1)
@@ -368,7 +409,8 @@ class planetoparse:
                     else:
                         self.params[name] = value
                 line = infile.readline()
-            #we have a delimiter, determine if it's a 1d or 2d histogram and load accordingly:
+            #we have a delimiter, determine if it's a 1d or 2d histogram 
+            #and load accordingly:
             line = infile.readline()
             if line.split('\t')[0] == 'Histogram2D':
                 infile, line = self.__parse_2d_hist(infile, line)
@@ -412,19 +454,23 @@ class planetoparse:
         for particle in self.primhists:
             tmpcount += len(self.primhists[particle])
         print 'Primaries histograms:', tmpcount
-        count += tempcount
+        count += tmpcount
         print 'Atmosphere energy deposition histograms:', len(self.edep_atmo)
         count += len(self.edep_atmo)
         print 'Soil energy deposition histograms:', len(self.edep_soil)
         count += len(self.edep_soil)
         if not len(self.flux_up) == 0:
-            print 'Upward flux histograms:', len(self.flux_up)*len(self.flux_up[self.flux_up.keys()[0]])
-            count += len(self.flux_up)*len(self.flux_up[self.flux_up.keys()[0]])
+            print 'Upward flux histograms:', len(self.flux_up)*\
+                len(self.flux_up[self.flux_up.keys()[0]])
+            count += len(self.flux_up)*\
+                len(self.flux_up[self.flux_up.keys()[0]])
         else:
             print 'No upward flux histograms'
         if not len(self.flux_down) == 0:
-            print 'Downward flux histograms:', len(self.flux_down)*len(self.flux_down[self.flux_down.keys()[0]])
-            count += len(self.flux_down)*len(self.flux_down[self.flux_down.keys()[0]])
+            print 'Downward flux histograms:', len(self.flux_down)*\
+                len(self.flux_down[self.flux_down.keys()[0]])
+            count += len(self.flux_down)*\
+                len(self.flux_down[self.flux_down.keys()[0]])
         else:
             print 'No downward flux histograms'
         print 'Other 1D histograms:', len(self.hists1d)
@@ -436,8 +482,10 @@ class planetoparse:
     def print_empty(self):
         """Print information on empty histograms, if any."""
         def parse_title(hist):
+            """Parses and returns title of histogram."""
             if 'Title' in hist.params:
-                titleparse = re.match('(.*)\s*\[(.*)\]', hist.params['Title'])
+                titleparse = re.match('(.*)\s*\[(.*)\]',
+                                      hist.params['Title'])
                 res = titleparse.group(1)
             else:
                 res = 'Unknown histogram title'
@@ -453,14 +501,18 @@ class planetoparse:
             for detector in self.flux2d_down[particle]:
                 for hist in self.flux2d_down[particle][detector]:
                     if hist.isempty():
-                        message += '\tflux2d_down, particle ' + particle + ', detector ' + str(detector) + ':' + parse_title(hist) + '\n'
+                        message += '\tflux2d_down, particle ' + particle +\
+                            ', detector ' + str(detector) + ':' +\
+                            parse_title(hist) + '\n'
                         count += 1
         #flux2d_up:
         for particle in self.flux2d_up:
             for detector in self.flux2d_up[particle]:
                 for hist in self.flux2d_up[particle][detector]:
                     if hist.isempty():
-                        message += '\tflux2d_up, particle ' + particle + ', detector ' + str(detector) + ':' + parse_title(hist) + '\n'
+                        message += '\tflux2d_up, particle ' + particle +\
+                            ', detector ' + str(detector) + ':' +\
+                            parse_title(hist) + '\n'
                         count += 1
         #hists2d:
         for hist in self.hists2d:
@@ -487,13 +539,15 @@ class planetoparse:
         for particle in self.flux_down:
             for detector in self.flux_down[particle]:
                 if self.flux_down[particle][detector].isempty():
-                    message += '\tflux_down, particle ' + particle + ', detector ' + str(detector) + '\n'
+                    message += '\tflux_down, particle ' + particle +\
+                        ', detector ' + str(detector) + '\n'
                     count += 1
         #flux_up:
         for particle in self.flux_up:
             for detector in self.flux_up[particle]:
                 if self.flux_down[particle][detector].isempty():
-                    message += '\tflux_up, particle ' + particle + ', detector ' + str(detector) + '\n'
+                    message += '\tflux_up, particle ' + particle +\
+                        ', detector ' + str(detector) + '\n'
                     count += 1
         #hists1d:
         for hist in self.hists2d:
@@ -504,12 +558,14 @@ class planetoparse:
         if message == '':
             message = 'No all-zero histograms detected.'
         else:
-            message = 'The following all-zero histograms have been detected:\n' + message
+            message = 'The following all-zero histograms \
+                have been detected:\n' + message
             message += '\nTotal count: ' + str(count)
         print message
         return
 
     def __parse_hist(self, infile, line):
+        """Parses histogram information into a histdata instance."""
         res = histdata()
         line = line.split('\t')
         res.type = line[0]
@@ -538,6 +594,7 @@ class planetoparse:
         return res, infile, line        
 
     def __parse_2d_hist(self, infile, line):
+        """Parses 2D histogram information into a histdata instance."""
         res, infile, line = self.__parse_hist(infile, line)
         title = res.title.split('/')
         if title[1] == 'COSMONUC':
@@ -564,6 +621,7 @@ class planetoparse:
         return infile, line
         
     def __parse_1d_hist(self, infile, line):
+        """Parses 1D histogram information into a histdata instance."""
         res, infile, line = self.__parse_hist(infile, line)
         title = res.title.split('/')
         if title[1] == 'FLUX':
@@ -588,7 +646,7 @@ class planetoparse:
             res.particle = 'primary ' + particle
             res.detector = 0
             #fix primary particle flux being too low:
-            res.data[:,3:] *= 2.
+            res.data[:, 3:] *= 2.
             if not particle in self.primhists:
                 self.primhists[particle] = []
             self.primhists[particle].append(res)
@@ -597,7 +655,8 @@ class planetoparse:
         return infile, line
         
     def save(self, filename):
-        """Save the contained Planetocosmics result information into a binary file for later use."""
+        """Save the contained Planetocosmics result information into a 
+        binary file for later use."""
         outfile = open(filename, 'wb')
         cPickle.dump(self.primaries, outfile)
         cPickle.dump(self.normalisation, outfile)
@@ -637,6 +696,7 @@ class planetoparse:
         return
         
     def __save_hist_to_ascii(self, hist, outfile):
+        """Saves histogram information to an ASCII file"""
         outfile.write(DELIMITER)
         outfile.write(hist.type + '\t' + hist.title + '\n')
         outfile.write(DELIMITER)
@@ -646,10 +706,12 @@ class planetoparse:
         return        
         
     def save_ascii(self, filename):
-        """Save the contained Planetocosmics result information into an ASCII file for later use."""
+        """Save the contained Planetocosmics result information into an 
+        ASCII file for later use."""
         outfile = open(filename, 'w')
         outfile.write('nb_of_primaries : ' + str(self.primaries) + '\n')
-        outfile.write('normalisation_type : ' + str(self.normalisation) + '\n')
+        outfile.write('normalisation_type : ' + str(self.normalisation) +\
+            '\n')
         for param in self.params:
             outfile.write(param + ' : ' + str(self.params[param]) + '\n')
         self.__save_hist_to_ascii(self.cosmonuc, outfile)
@@ -665,10 +727,12 @@ class planetoparse:
             self.__save_hist_to_ascii(hist, outfile)
         for particle in self.flux_up:
             for detector in self.flux_up[particle]:
-                self.__save_hist_to_ascii(self.flux_up[particle][detector], outfile)
+                self.__save_hist_to_ascii(self.flux_up[particle][detector],
+                                          outfile)
         for particle in self.flux_down:
             for detector in self.flux_down[particle]:
-                self.__save_hist_to_ascii(self.flux_down[particle][detector], outfile)
+                self.__save_hist_to_ascii(self.flux_down[particle][detector],
+                                          outfile)
         for hist in self.edep_soil:
             self.__save_hist_to_ascii(hist, outfile)
         for hist in self.edep_atmo:
@@ -682,7 +746,8 @@ class planetoparse:
         return
 
     def set_scale_per_nuc(self, scale, particle, weight = None):
-        """Sets (scale = True) or unsets (scale = False) per nucleus scaling for all flux histograms of a given particle."""
+        """Sets (scale = True) or unsets (scale = False) per nucleus scaling
+        for all flux histograms of a given particle."""
         count = 0
         if scale and weight is None:
             print 'ERROR: Need particle weight for scaling.'
@@ -709,14 +774,16 @@ class planetoparse:
                     self.flux_down[particle][detector].unscale_per_nuc()
                 count += 1
         if scale:
-            print 'Scaled', count, particle, 'flux histograms with weight', weight
+            print 'Scaled', count, particle, 'flux histograms with weight', \
+                weight
         else:
             print 'Unscaled', count, particle, 'flux histograms'
         return
             
         
     def set_scale_per_sterad(self, scale):
-        """Sets (scale = True) or unsets (scale = False) per steradian scaling for all flux histograms."""
+        """Sets (scale = True) or unsets (scale = False) per steradian 
+        scaling for all flux histograms."""
         count = 0
         for particle in self.primhists:
             for hist in self.primhists[particle]:
@@ -746,7 +813,11 @@ class planetoparse:
         return
         
     def combine_highz_isotopes(self, verbosity = 0):
-        """Combines available high-Z histograms in flux_up and flux_down into one histogram per element. High-Z histograms are detected by the string '[0.0]' being present in the particle name. Fluxes are scaled to energy/nuc prior to combining, the resulting histogram will have the binning and nuclear weight of the middle isotope."""
+        """Combines available high-Z histograms in flux_up and flux_down into
+        one histogram per element. High-Z histograms are detected by the 
+        string '[0.0]' being present in the particle name. Fluxes are scaled
+        to energy/nuc prior to combining, the resulting histogram will have 
+        the binning and nuclear weight of the middle isotope."""
         #do this in flux_up, flux_down
         if verbosity > 0:
             print 'Combining high-Z histograms in downward flux...'
@@ -757,6 +828,7 @@ class planetoparse:
         return
         
     def __get_highz_element_list(self, flux_list):
+        """Returns a dict of elements with their isotopes as entries."""
         #get list of isotopes
         isotopes = []
         for particle in flux_list.keys():
@@ -769,11 +841,14 @@ class planetoparse:
             if not parse_isotope is None:
                 if not parse_isotope.group(1) in elements:
                     elements[parse_isotope.group(1)] = []
-                if not parse_isotope.group(2) in elements[parse_isotope.group(1)]:
-                    elements[parse_isotope.group(1)].append(parse_isotope.group(2))
+                if not parse_isotope.group(2) in \
+                    elements[parse_isotope.group(1)]:
+                    elements[parse_isotope.group(1)].append(
+                        parse_isotope.group(2))
         return elements
         
     def __combine_highz_flux(self, flux_list, verbosity = 0):
+        """Combines high-Z flux histograms into one for each element."""
         elements = self.__get_highz_element_list(flux_list)
         if verbosity > 0:
             if len(elements) > 0:
@@ -790,24 +865,33 @@ class planetoparse:
                 return
         #combine histograms for each element
         for element in elements:
-            detectors = self.__get_common_detectors(flux_list, element, elements[element])
+            detectors = self.__get_common_detectors(flux_list, element,
+                                                    elements[element])
             if verbosity > 1:
-                print 'Combining ' + element + ' histograms in ' + str(len(detectors)) + ' detector levels...'
+                print 'Combining ' + element + ' histograms in ' +\
+                    str(len(detectors)) + ' detector levels...'
             for detector in detectors:
                 #find the middle isotope, we want to use that binning:
                 middle_index = int64(floor(len(elements[element])/2))
                 middle_isotope = elements[element][middle_index]
                 #get the list of the remaining isotopes:
-                isotopes = elements[element][:middle_index] + elements[element][middle_index + 1:]
-                #copy the histogram of the middle isotope, we will use that for the basis
-                middle_hist = flux_list[self.__get_particle_name(element, middle_isotope)][detector]
+                isotopes = elements[element][:middle_index] +\
+                    elements[element][middle_index + 1:]
+                #copy the histogram of the middle isotope,
+                #we will use that for the basis
+                middle_hist = flux_list[self.__get_particle_name(
+                    element, middle_isotope)][detector]
                 middle_hist.scale_per_nuc(float64(middle_isotope))
                 res = histdata(copyhist = middle_hist)
-                res.params['Title'] = re.sub(self.__get_particle_name(element, middle_isotope, regex = True), element, res.params['Title'])
+                res.params['Title'] = re.sub(self.__get_particle_name(
+                    element, middle_isotope, regex = True), element, 
+                    res.params['Title'])
                 res.particle = element
                 #move through remaining isotopes and add up the histograms:
                 for isotope in isotopes:
-                    hist = flux_list[self.__get_particle_name(element, isotope)][detector]
+                    hist = flux_list[self.__get_particle_name(element, 
+                                                              isotope)]\
+                                                                  [detector]
                     hist.scale_per_nuc(float64(isotope))
                     res = self.__combine_single_hists(res, hist)
                 #add the result into the flux list:
@@ -817,53 +901,65 @@ class planetoparse:
         return
         
     def __get_particle_name(self, element, isotope, regex = False):
+        """Returns the Geant4 particle name for a given element and isotope."""
         if not regex:
             return element + isotope + '[0.0]'
         else:
             return element + isotope
 
     def __get_common_detectors(self, flux_list, element, isotope_list):
-        res = flux_list[self.__get_particle_name(element, isotope_list[0])].keys()
+        """Returns a list of detectors that are common for a set of
+        histograms."""
+        res = flux_list[self.__get_particle_name(element, 
+                                                 isotope_list[0])].keys()
         for isotope in isotope_list[1:]:
-            tmp = flux_list[self.__get_particle_name(element, isotope)].keys()
+            tmp = flux_list[self.__get_particle_name(element, 
+                                                     isotope)].keys()
             for detector in res:
                 if not detector in tmp:
                     res.remove(detector)
         return res
         
     def __combine_single_hists(self, hist1, hist2):
+        """Combines two single histograms."""
         if not len(hist1.data) == len(hist2.data):
             print 'ERROR: Unable to combine histograms, different length.'
             return hist1
         res = histdata(copyhist = hist1)
         #hist is the interpolated histogram to add:
-        hist = 10**interp(res.data[:,2], hist2.data[:,2], log10(hist2.data[:,3]))
+        hist = 10**interp(res.data[:, 2], hist2.data[:, 2], 
+                          log10(hist2.data[:, 3]))
         #remove the nan values:
         hist[isnan(hist)] = 0.
         #add everything up:
-        res.data[:,3] += hist
-        res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
+        res.data[:, 3] += hist
+        res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)
         return res
         
     def print_nonempty_highz(self):
         """Print a list of high-Z histograms that are not empty."""
-        downlist, downcount = self.__get_nonempty_highz_string(self.flux_up, '\tUpward flux histograms')
-        uplist, upcount = self.__get_nonempty_highz_string(self.flux_up, '\tUpward flux histograms')
+        downlist, downcount = self.__get_nonempty_highz_string(
+            self.flux_up, '\tUpward flux histograms')
+        uplist, upcount = self.__get_nonempty_highz_string(
+            self.flux_up, '\tUpward flux histograms')
         if not (downcount == 0 and upcount == 0):
-            output = 'The following non-zero high-Z histograms have been detected:\n' + downlist + uplist
+            output = 'The following non-zero high-Z histograms have been \
+                detected:\n' + downlist + uplist
             output += '\n\nTotal count: ' + str(downcount + upcount)
         else:
             output = 'No non-zero high-Z histograms have been detected.'
         print output
         
     def __get_nonempty_highz_string(self, flux_list, prefix):
+        """Returns list and count of non-empty high-Z flux histograms."""
         res = ""
         count = 0
         elements = self.__get_highz_element_list(self.flux_up)
         for element in elements:
             for detector in flux_list[element]:
                 if not flux_list[element][detector].isempty():
-                    res += prefix + ', element ' + element + ', detector ' + str(detector) + '\n'
+                    res += prefix + ', element ' + element + ', detector ' +\
+                        str(detector) + '\n'
                     count += 1
         return res[:-1], count
 
