@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""Contains plotting and data analysis tools for working with planetoparse
+instances."""
 
 import re
 from numpy import *
@@ -9,6 +11,8 @@ if not plt.isinteractive():
     plt.ion()
 
 def __parse_title(title):
+    """Parses plot title and unit information from planetoparse plot titles.
+    """
     titleparse = re.match('(.*)\s*\[(.*)\]', title)
     if titleparse is None:
         return None, title
@@ -16,6 +20,7 @@ def __parse_title(title):
         return titleparse.group(1), titleparse.group(2)
         
 def __get_units_from_label(label):
+    """Returns unit informations from plot labels."""
     res = label.split(' / ')
     if len(res) == 1:
         return res[0]
@@ -30,9 +35,11 @@ ANGLE_UNITS = ['sr']
 WEIGHT_UNITS = ['nuc']
 UNIT_ORDER = ['count', 'area', 'time', 'angle', 'energy', 'weight']
 UNIT_REPLACE = {'nb particles': 'particles'}
-ENERGY_SCALERS = {None: 1, 'GeV': 0.001, 'MeV': 1, 'eV': 1000000.0, 'keV': 1000.0}
+ENERGY_SCALERS = {None: 1, 'GeV': 0.001, 'MeV': 1, 'eV': 1000000.0,
+                  'keV': 1000.0}
 
 def __normalize_units(units):
+    """Returns unit strings in a normalized order."""
     units = units.split('/')
     unitsort = {}
     unitsort['main'] = units.pop(0)
@@ -58,11 +65,13 @@ def __normalize_units(units):
     return res
     
 def __get_current_xy_labels():
+    """Returns X and Y axis labels of the current plot figure."""
     fig = plt.gcf()
     ax = fig.gca()
     return ax.get_xlabel(), ax.get_ylabel()
     
 def __check_xy_units(xunits, yunits):
+    """Checks if X and Y units match the current plot."""
     match_x = __check_x_units(xunits)
     match_y = __check_y_units(yunits)
     mismatch_axes = ''
@@ -78,6 +87,7 @@ def __check_xy_units(xunits, yunits):
     return
     
 def __check_x_units(xunits):
+    """Checks if X units match the current plot."""
     cur_xunits, cur_yunits = __get_current_xy_labels()
     if not cur_xunits == '':
         cur_xunits = __get_units_from_label(cur_xunits)
@@ -86,6 +96,7 @@ def __check_x_units(xunits):
         return True
 
 def __check_y_units(yunits):
+    """Checks if Y units match the current plot."""
     cur_xunits, cur_yunits = __get_current_xy_labels()
     if not cur_yunits == '':
         cur_yunits = __get_units_from_label(cur_yunits)
@@ -94,6 +105,7 @@ def __check_y_units(yunits):
         return True
 
 class log_interpolator:
+    """Interpolates data on a log scale."""
     def __init__(self, atmodata, field_x, field_y):
         self.atmodata = atmodata
         self.field_x = field_x
@@ -101,10 +113,13 @@ class log_interpolator:
         return
         
     def __call__(self, x):
-        return 10**interp(x, self.atmodata.data[self.field_x], log10(self.atmodata.data[self.field_y]))
+        return 10**interp(x, self.atmodata.data[self.field_x], 
+                          log10(self.atmodata.data[self.field_y]))
 
 def convert_edep_to_LET(profile, atmodata):
-    """Convert a energy deposition profile in rad/s vs km to keV/um vs km. Options needed are the deposition profile to convert and the atmodata/mcddata atmosphere data used in the simulation run."""
+    """Convert a energy deposition profile in rad/s vs km to keV/um vs km.
+    Options needed are the deposition profile to convert and the atmodata/
+    mcddata atmosphere data used in the simulation run."""
     res = histdata(copyhist = profile)
     tmp, yunits = __parse_title(profile.params['Xaxis'])
     if yunits == 'km':
@@ -130,7 +145,9 @@ def convert_edep_to_LET(profile, atmodata):
     return res
         
 def plot_edep_profile(hist, *args, **kwargs):
-    """Plots energy deposition profiles. Pass the profile as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+    """Plots energy deposition profiles. Pass the profile as available 
+    through planetoparse to plot, additional arguments are passed to the 
+    Matplotlib plotting function (errorbar)."""
     if hist.isempty():
         print 'WARNING: Unable to plot, histogram is all-zero.'
         return
@@ -139,8 +156,10 @@ def plot_edep_profile(hist, *args, **kwargs):
     else:
         capsize = kwargs['capsize']
         kwargs.pop('capsize')
-    bin_width = hist.data[:,1] - hist.data[:,0]
-    plt.errorbar(hist.data[:,3] / bin_width, hist.data[:,2], xerr = hist.data[:,4] / bin_width, marker='.', capsize = capsize, *args, **kwargs)
+    bin_width = hist.data[:, 1] - hist.data[:, 0]
+    plt.errorbar(hist.data[:, 3] / bin_width, hist.data[:, 2], 
+                 xerr = hist.data[:,4] / bin_width, marker='.', 
+                 capsize = capsize, *args, **kwargs)
     title, xunits = __parse_title(hist.params['Title'])
     ylabel, yunits = __parse_title(hist.params['Xaxis'])
     __check_xy_units(xunits, yunits)
@@ -148,12 +167,16 @@ def plot_edep_profile(hist, *args, **kwargs):
     plt.xlabel('Deposited energy / ' + xunits)
     plt.ylabel(ylabel + ' / ' + yunits)
     plt.xscale('log')
-    plt.ylim(amin(hist.data[:,2]), amax(hist.data[:,2]))
+    plt.ylim(amin(hist.data[:, 2]), amax(hist.data[:, 2]))
     plt.show(block = False)
     return
     
-def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = True, xlims = (-inf, inf), energy_scale = None, *args, **kwargs):
-    """Plots 1D histograms. Pass the histogram as available through planetoparse to plot, additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+def plot_1d_hist(hist, scale_by = 1., label_detector = False, 
+                 scale_by_width = True, xlims = (-inf, inf), 
+                 energy_scale = None, *args, **kwargs):
+    """Plots 1D histograms. Pass the histogram as available through 
+    planetoparse to plot, additional arguments are passed to the Matplotlib 
+    plotting function (errorbar)."""
     if hist.isempty():
         print 'WARNING: Unable to plot, histogram is all-zero.'
         return
@@ -169,12 +192,12 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
     else:
         capsize = kwargs['capsize']
         kwargs.pop('capsize')
-    mask = (hist.data[:,2] > xlims[0]) * (hist.data[:,2] < xlims[1])
+    mask = (hist.data[:, 2] > xlims[0]) * (hist.data[:, 2] < xlims[1])
     data = hist.data[mask]
     if not energy_scale in ENERGY_SCALERS:
         print 'WARNING: Invalid energy scale specified, defaulting to MeV'
         energy_scale = None
-    data[:,:3] *= ENERGY_SCALERS[energy_scale]
+    data[:, :3] *= ENERGY_SCALERS[energy_scale]
     params = {}
     for entry in hist.params:
         params[entry] = hist.params[entry]
@@ -183,14 +206,17 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
         if not tmp[0] is None:
             params['Xaxis'] = tmp[0] + '[' + energy_scale + ']'
     if scale_by_width:
-        bin_width = data[:,1] - data[:,0]
+        bin_width = data[:, 1] - data[:, 0]
         if (bin_width == 0.).all():
             print 'WARNING: Unable to scale by bin width'
             scale_by_width = False
             bin_width = ones(len(bin_width))
     else:
         bin_width = ones(len(data))
-    plt.errorbar(data[:,2], data[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = data[:,4] * scale_by / bin_width, marker='.', label = label, capsize = capsize, *args, **kwargs)
+    plt.errorbar(data[:, 2], data[:, 3] * scale_by / bin_width,
+                 xerr = bin_width / 2, 
+                 yerr = data[:, 4] * scale_by / bin_width, marker='.',
+                 label = label, capsize = capsize, *args, **kwargs)
     title, units = __parse_title(params['Title'])
     plt.title(title)
     xlabel, xunits = __parse_title(params['Xaxis'])
@@ -208,7 +234,7 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
     __check_xy_units(xunits, yunits)
     plt.xlabel(xlabel)
     plt.ylabel(yunits)
-    if __is_logscale(hist.data[:,2]):
+    if __is_logscale(hist.data[:, 2]):
         plt.xscale('log')
     plt.yscale('log')
     plt.legend(loc = 'best')
@@ -216,7 +242,8 @@ def plot_1d_hist(hist, scale_by = 1., label_detector = False, scale_by_width = T
     return
     
 def plot_array_hist(array, scale_by = 1., *args, **kwargs):
-    """Plots 1D histograms from numpy arrays. Additional arguments are passed to the Matplotlib plotting function (errorbar)."""
+    """Plots 1D histograms from numpy arrays. Additional arguments are passed
+    to the Matplotlib plotting function (errorbar)."""
     if not 'capsize' in kwargs:
         capsize = 0
     else:
@@ -224,38 +251,46 @@ def plot_array_hist(array, scale_by = 1., *args, **kwargs):
         kwargs.pop('capsize')
     #errors are included:
     if array.shape[1] == 5:
-        scale_by_width = True
-        bin_width = array[:,1] - array[:,0]
+        bin_width = array[:, 1] - array[:, 0]
         if (bin_width == 0.).all():
             print 'WARNING: Unable to scale by bin width'
-            scale_by_width = False
             bin_width = ones(len(bin_width))
-        plt.errorbar(array[:,2], array[:,3] * scale_by / bin_width, xerr = bin_width / 2, yerr = array[:,4] * scale_by / bin_width, marker='.', capsize = capsize, *args, **kwargs)
+        plt.errorbar(array[:, 2], array[:, 3] * scale_by / bin_width, 
+                     xerr = bin_width / 2, 
+                     yerr = array[:, 4] * scale_by / bin_width, 
+                     marker='.', capsize = capsize, *args, **kwargs)
     #errors are not included, neither are binwidths:
     elif array.shape[1] == 2:
-        plt.plot(array[:,0], array[:,1], *args, **kwargs)
-    if __is_logscale(array[:,2]):
+        plt.plot(array[:, 0], array[:, 1], *args, **kwargs)
+    if __is_logscale(array[:, 2]):
         plt.xscale('log')
     plt.yscale('log')
     plt.show(block = False)
     return
     
 def scale_array_per_nuc(array, weight):
-    """Scales an array that contains Planetocosmics result data per nucleus. Requires the following columns:
-    1. lower bin edge 2. upper bin edge 3. bin middle 4. bin height 5. bin error"""
-    array[:,:3] /= weight
-    array[:,3:] *= weight
+    """Scales an array that contains Planetocosmics result data per nucleus.
+    Requires the following columns:
+    1. lower bin edge
+    2. upper bin edge
+    3. bin middle
+    4. bin height
+    5. bin error"""
+    array[:, :3] /= weight
+    array[:, 3:] *= weight
     return
 
-def plot_2d_hist(hist, logscale = True, scale_by_widths = False, *args, **kwargs):
-    """Plots 2D histogram data. Pass the histogram as available through planetoparse to plot."""
+def plot_2d_hist(hist, logscale = True, scale_by_widths = False,
+                 *args, **kwargs):
+    """Plots 2D histogram data. Pass the histogram as available through 
+    planetoparse to plot."""
     if hist.isempty():
         print 'WARNING: Unable to plot, histogram is all-zero.'
         return
     if scale_by_widths:
         data = empty_like(hist.data)
         data[:] = hist.data
-        data[:,4] /= data[:,3] - data[:,2]
+        data[:, 4] /= data[:, 3] - data[:, 2]
     else:
         data = hist.data
     histdat = []
@@ -295,7 +330,7 @@ def plot_2d_hist(hist, logscale = True, scale_by_widths = False, *args, **kwargs
         if ax[0].get_title() == title and ax[1].get_title() == '':
             fig.delaxes(ax[1])
             fig.subplots_adjust()
-    cbar=plt.colorbar()
+    cbar = plt.colorbar()
     plt.title(title)
     if scale_by_widths:
         units += '/' + __parse_title(hist.params['Xaxis'])[1]
@@ -306,13 +341,15 @@ def plot_2d_hist(hist, logscale = True, scale_by_widths = False, *args, **kwargs
     return
     
 def __is_logscale(axis):
+    """Checks whether or not a given axis is logscale."""
     if (diff(diff(axis)) <= 1e-15).all():
         return False
     else:
         return True
     
 def plot_cosmonuc(results, logscale = True, *args, **kwargs):
-    """Plots 2D histogram of cosmogenic nuclides. Pass the planetoparse instance to plot."""
+    """Plots 2D histogram of cosmogenic nuclides. Pass the planetoparse
+    instance to plot."""
     if results.cosmonuc.isempty():
         print 'WARNING: Unable to plot, histogram is all-zero.'
         return
@@ -332,15 +369,17 @@ def plot_cosmonuc(results, logscale = True, *args, **kwargs):
         lw = kwargs['lw']
         kwargs.pop('lw')
     if logscale:
-        c = log10(results.cosmonuc.data[:,4])
+        c = log10(results.cosmonuc.data[:, 4])
     else:
-        c = results.cosmonuc.data[:,4]
-    plt.scatter(results.cosmonuc.data[:,0] + .5, results.cosmonuc.data[:,2] + .5, c = c, s = s, marker = marker, lw = lw, *args, **kwargs)
+        c = results.cosmonuc.data[:, 4]
+    plt.scatter(results.cosmonuc.data[:, 0] + .5, 
+                results.cosmonuc.data[:, 2] + .5, c = c, s = s, 
+                marker = marker, lw = lw, *args, **kwargs)
     plt.xlabel(results.cosmonuc.params['Xaxis'])
     plt.ylabel(results.cosmonuc.params['Yaxis'])
-    plt.xlim([0,25])
+    plt.xlim([0, 25])
     plt.xticks(arange(0, 26, 2))
-    plt.ylim([0,25])
+    plt.ylim([0, 25])
     plt.yticks(arange(0, 26, 2))
     fig = plt.gcf()
     ax = fig.get_axes()
@@ -350,7 +389,7 @@ def plot_cosmonuc(results, logscale = True, *args, **kwargs):
         if ax[0].get_title() == title and ax[1].get_title() == '':
             fig.delaxes(ax[1])
             fig.subplots_adjust()
-    cbar=plt.colorbar()
+    cbar = plt.colorbar()
     plt.title(title)
     if logscale:
         units = 'log ' + units
@@ -359,7 +398,8 @@ def plot_cosmonuc(results, logscale = True, *args, **kwargs):
     return
     
 def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
-    """Plots the detector levels of the given flux histograms into the current plot."""
+    """Plots the detector levels of the given flux histograms into the 
+    current plot."""
     left, right = plt.xlim()
     if not plot_only == []:
         detectors = plot_only
@@ -370,7 +410,8 @@ def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
             detectors.remove(detector)
     altitudes = []
     for detector in detectors:
-        altitude, alt_unit = fluxhists[detector].params['Altitude'].split(' ')
+        altitude, alt_unit = \
+            fluxhists[detector].params['Altitude'].split(' ')
         altitude = float64(altitude)
         altitudes.append(altitude)
         plt.plot((left, right), (altitude, altitude), 'k')
@@ -384,15 +425,18 @@ def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
     
 def combine_histograms(*args):
     """Combines the different histograms for multiple planetoparse instances.
-    WARNING: Only the primaries count, cosmonuc 2D histograms, primary particle fluxes and up/down flux histograms are combined!"""
+    WARNING: Only the primaries count, cosmonuc 2D histograms, primary 
+    particle fluxes and up/down flux histograms are combined!"""
     if len(args) > 1:
         res = planetoparse()
         for addthis in args:
             #check and set normalisation
             if not res.normalisation == '':
                 if not res.normalisation == addthis.normalisation:
-                    print 'WARNING: Skipping result, different normalisation methods'
-                    print '\t' + addthis.normalisation + ' vs. ' + res.normalisation + ' as expected'
+                    print 'WARNING: Skipping result, different normalisation\
+                        methods'
+                    print '\t' + addthis.normalisation + ' vs. ' +\
+                        res.normalisation + ' as expected'
                     continue
             else:
                 res.normalisation += addthis.normalisation
@@ -402,10 +446,11 @@ def combine_histograms(*args):
             if 'nb_of_events' in res.params:
                 res.params['nb_of_events'] += addthis.params['nb_of_events']
             else:
-                res.params['nb_of_events'] = float64(0.) + addthis.params['nb_of_events']
+                res.params['nb_of_events'] = float64(0.) +\
+                    addthis.params['nb_of_events']
             #combine cosmogenic nuclides
             if not res.cosmonuc is None:
-                res.cosmonuc.data[:,4] += addthis.cosmonuc.data[:,4]
+                res.cosmonuc.data[:, 4] += addthis.cosmonuc.data[:, 4]
             else:
                 res.cosmonuc = histdata(copyhist = addthis.cosmonuc)
             #combine upward fluxes
@@ -414,59 +459,86 @@ def combine_histograms(*args):
                     if not particle in res.flux_up:
                         res.flux_up[particle] = {}
                     if detector in res.flux_up[particle]:
-                        res.flux_up[particle][detector] = __combine_single_hists(res.flux_up[particle][detector], addthis.flux_up[particle][detector])
+                        res.flux_up[particle][detector] = \
+                            __combine_single_hists(
+                                res.flux_up[particle][detector], 
+                                addthis.flux_up[particle][detector])
                     else:
-                        res.flux_up[particle][detector] = histdata(copyhist = addthis.flux_up[particle][detector])
+                        res.flux_up[particle][detector] = \
+                            histdata(copyhist = \
+                                addthis.flux_up[particle][detector])
             #combine downward fluxes
             for particle in addthis.flux_down:
                 for detector in addthis.flux_down[particle]:
                     if not particle in res.flux_down:
                         res.flux_down[particle] = {}
                     if detector in res.flux_down[particle]:
-                        res.flux_down[particle][detector] = __combine_single_hists(res.flux_down[particle][detector], addthis.flux_down[particle][detector])
+                        res.flux_down[particle][detector] = \
+                            __combine_single_hists(
+                                res.flux_down[particle][detector], 
+                                addthis.flux_down[particle][detector])
                     else:
-                        res.flux_down[particle][detector] = histdata(copyhist = addthis.flux_down[particle][detector])
+                        res.flux_down[particle][detector] = \
+                            histdata(copyhist = \
+                                addthis.flux_down[particle][detector])
             #combine primary fluxes
             for particle in addthis.primhists:
                 if not particle in res.primhists:
                     res.primhists[particle] = []
                     for hist in addthis.primhists[particle]:
-                        res.primhists[particle].append(histdata(copyhist = hist))
+                        res.primhists[particle].append(
+                            histdata(copyhist = hist))
                 else:
                     for i in arange(0, len(addthis.primhists[particle])):
                         added = False
                         for j in arange(0, len(res.primhists[particle])):
-                            addtitle = __parse_title(addthis.primhists[particle][i].params['Title'])[0]
-                            restitle = __parse_title(res.primhists[particle][j].params['Title'])[0]
+                            addtitle = __parse_title(
+                                addthis.primhists\
+                                    [particle][i].params['Title'])[0]
+                            restitle = __parse_title(res.primhists\
+                                [particle][j].params['Title'])[0]
                             if addtitle == restitle:
-                                res.edep_atmo[j] = __combine_single_hists(res.primhists[particle][j], addthis.primhists[particle][i])
+                                res.edep_atmo[j] = __combine_single_hists(
+                                    res.primhists[particle][j],
+                                    addthis.primhists[particle][i])
                                 added = True
                         if not added:
-                            res.edep_atmo.append(histdata(copyhist = addthis.primhists[particle][i]))
+                            res.edep_atmo.append(histdata(
+                                copyhist = addthis.primhists[particle][i]))
                             added = True
             #combine 1d hist list
             for i in arange(0, len(addthis.hists1d)):
                 added = False
                 for j in arange(0, len(res.hists1d)):
-                    addtitle = __parse_title(addthis.hists1d[i].params['Title'])[0]
-                    restitle = __parse_title(res.hists1d[j].params['Title'])[0]
-                    if addtitle == restitle and addthis.hists1d[i].detector == res.hists1d[j].detector:
-                        res.hists2d[j] = __combine_single_hists(res.hists1d[j], addthis.hists1d[i])
+                    addtitle = __parse_title(
+                        addthis.hists1d[i].params['Title'])[0]
+                    restitle = __parse_title(
+                        res.hists1d[j].params['Title'])[0]
+                    if addtitle == restitle and addthis.hists1d[i].detector\
+                        == res.hists1d[j].detector:
+                        res.hists2d[j] = __combine_single_hists(
+                            res.hists1d[j], addthis.hists1d[i])
                         added = True
                 if not added:
-                    res.hists2d.append(histdata(copyhist = addthis.hists2d[i]))
+                    res.hists2d.append(histdata(
+                        copyhist = addthis.hists2d[i]))
                     added = True
             #combine 2d hist list
             for i in arange(0, len(addthis.hists2d)):
                 added = False
                 for j in arange(0, len(res.hists2d)):
-                    addtitle = __parse_title(addthis.hists2d[i].params['Title'])[0]
-                    restitle = __parse_title(res.hists2d[j].params['Title'])[0]
-                    if addtitle == restitle and addthis.hists2d[i].detector == res.hists2d[j].detector:
-                        res.hists2d[j] = __combine_single_hists(res.hists2d[j], addthis.hists2d[i])
+                    addtitle = __parse_title(
+                        addthis.hists2d[i].params['Title'])[0]
+                    restitle = __parse_title(
+                        res.hists2d[j].params['Title'])[0]
+                    if addtitle == restitle and addthis.hists2d[i].detector\
+                        == res.hists2d[j].detector:
+                        res.hists2d[j] = __combine_single_hists(
+                            res.hists2d[j], addthis.hists2d[i])
                         added = True
                 if not added:
-                    res.hists2d.append(histdata(copyhist = addthis.hists2d[i]))
+                    res.hists2d.append(histdata(
+                        copyhist = addthis.hists2d[i]))
                     added = True
             #combine 2d upward fluxes
             for particle in addthis.flux2d_up:
@@ -474,78 +546,118 @@ def combine_histograms(*args):
                     if not particle in res.flux2d_up:
                         res.flux2d_up[particle] = {}
                     if detector in res.flux2d_up[particle]:
-                        for i in arange(0, len(addthis.flux2d_up[particle][detector])):
+                        for i in arange(0, len(
+                            addthis.flux2d_up[particle][detector])):
                             added = False
-                            for j in arange(0, len(res.flux2d_up[particle][detector])):
-                                addtitle = __parse_title(addthis.flux2d_up[particle][detector][i].params['Title'])[0]
-                                restitle = __parse_title(res.flux2d_up[particle][detector][j].params['Title'])[0]
+                            for j in arange(0, len(res.flux2d_up\
+                                [particle][detector])):
+                                addtitle = __parse_title(addthis.flux2d_up\
+                                    [particle][detector][i].params['Title'])\
+                                        [0]
+                                restitle = __parse_title(
+                                    res.flux2d_up[particle][detector][j].\
+                                        params['Title'])[0]
                                 if addtitle == restitle:
-                                    res.flux2d_up[particle][detector][j] = __combine_single_hists(res.flux2d_up[particle][detector][j], addthis.flux2d_up[particle][detector][i])
+                                    res.flux2d_up[particle][detector][j] = \
+                                        __combine_single_hists(
+                                            res.flux2d_up[particle]\
+                                                [detector][j], 
+                                        addthis.flux2d_up[particle]\
+                                            [detector][i])
                                     added = True
                             if not added:
-                                res.flux2d_up[particle][detector].append(histdata(copyhist = addthis.flux2d_up[particle][detector][i]))
+                                res.flux2d_up[particle][detector].append(
+                                    histdata(copyhist = \
+                                        addthis.flux2d_up[particle]\
+                                        [detector][i]))
                                 added = True
                     else:
                         res.flux2d_up[particle][detector] = []
                         for hist in addthis.flux2d_up[particle][detector]:
-                            res.flux2d_up[particle][detector].append(histdata(copyhist = hist))
+                            res.flux2d_up[particle][detector].append(
+                                histdata(copyhist = hist))
             #combine 2d downward fluxes
             for particle in addthis.flux2d_down:
                 for detector in addthis.flux2d_down[particle]:
                     if not particle in res.flux2d_down:
                         res.flux2d_down[particle] = {}
                     if detector in res.flux2d_down[particle]:
-                        for i in arange(0, len(addthis.flux2d_down[particle][detector])):
+                        for i in arange(0, len(addthis.flux2d_down[particle]\
+                            [detector])):
                             added = False
-                            for j in arange(0, len(res.flux2d_down[particle][detector])):
-                                addtitle = __parse_title(addthis.flux2d_down[particle][detector][i].params['Title'])[0]
-                                restitle = __parse_title(res.flux2d_down[particle][detector][j].params['Title'])[0]
+                            for j in arange(0, len(res.flux2d_down[particle]\
+                                [detector])):
+                                addtitle = __parse_title(addthis.flux2d_down\
+                                    [particle][detector][i].params['Title'])\
+                                        [0]
+                                restitle = __parse_title(
+                                    res.flux2d_down[particle][detector][j].\
+                                        params['Title'])[0]
                                 if addtitle == restitle:
-                                    res.flux2d_down[particle][detector][j] = __combine_single_hists(res.flux2d_down[particle][detector][j], addthis.flux2d_down[particle][detector][i])
+                                    res.flux2d_down[particle][detector][j]\
+																			= __combine_single_hists(
+                                            res.flux2d_down[particle]\
+                                                [detector][j], addthis.\
+                                                flux2d_down[particle]\
+                                                [detector][i])
                                     added = True
                             if not added:
-                                res.flux2d_down[particle][detector].append(histdata(copyhist = addthis.flux2d_down[particle][detector][i]))
+                                res.flux2d_down[particle][detector].append(
+                                    histdata(copyhist = addthis.flux2d_down\
+                                        [particle][detector][i]))
                                 added = True
                     else:
                         res.flux2d_down[particle][detector] = []
                         for hist in addthis.flux2d_down[particle][detector]:
-                            res.flux2d_down[particle][detector].append(histdata(copyhist = hist))
+                            res.flux2d_down[particle][detector].append(
+                                histdata(copyhist = hist))
             #combine atmospheric edep hists
             for i in arange(0, len(addthis.edep_atmo)):
                 added = False
                 for j in arange(0, len(res.edep_atmo)):
-                    addtitle = __parse_title(addthis.edep_atmo[i].params['Title'])[0]
-                    restitle = __parse_title(res.edep_atmo[j].params['Title'])[0]
+                    addtitle = __parse_title(
+                        addthis.edep_atmo[i].params['Title'])[0]
+                    restitle = __parse_title(
+                        res.edep_atmo[j].params['Title'])[0]
                     if addtitle == restitle:
-                        res.edep_atmo[j] = __combine_single_hists(res.edep_atmo[j], addthis.edep_atmo[i])
+                        res.edep_atmo[j] = __combine_single_hists(
+                            res.edep_atmo[j], addthis.edep_atmo[i])
                         added = True
                 if not added:
-                    res.edep_atmo.append(histdata(copyhist = addthis.edep_atmo[i]))
+                    res.edep_atmo.append(
+                        histdata(copyhist = addthis.edep_atmo[i]))
                     added = True
             #combine soil edep hists
             for i in arange(0, len(addthis.edep_soil)):
                 added = False
                 for j in arange(0, len(res.edep_soil)):
-                    addtitle = __parse_title(addthis.edep_soil[i].params['Title'])[0]
-                    restitle = __parse_title(res.edep_soil[j].params['Title'])[0]
+                    addtitle = __parse_title(
+                        addthis.edep_soil[i].params['Title'])[0]
+                    restitle = __parse_title(
+                        res.edep_soil[j].params['Title'])[0]
                     if addtitle == restitle:
-                        res.edep_soil[j] = __combine_single_hists(res.edep_soil[j], addthis.edep_soil[i])
+                        res.edep_soil[j] = __combine_single_hists(
+                            res.edep_soil[j], addthis.edep_soil[i])
                         added = True
                 if not added:
-                    res.edep_soil.append(histdata(copyhist = addthis.edep_soil[i]))
+                    res.edep_soil.append(histdata(
+                        copyhist = addthis.edep_soil[i]))
                     added = True
         return res
     else:
         return args[0]
         
 def __combine_single_hists(hist1, hist2):
+    """Combine two histograms into one."""
     from planetoparse import histdata
     if not hist1.type == hist2.type:
         print 'ERROR: Unable to combine histograms, incompatible dimensions'
         return hist1
     elif hist1.type == hist2.type == 'Histogram1D':
         res = histdata(copyhist = hist1)
-        if not (res.data[:,0] == hist2.data[:,0]).all() or not (res.data[:,1] == hist2.data[:,1]).all() or not (res.data[:,2] == hist2.data[:,2]).all():
+        if not (res.data[:, 0] == hist2.data[:, 0]).all() or not \
+            (res.data[:, 1] == hist2.data[:, 1]).all() or not \
+            (res.data[:, 2] == hist2.data[:, 2]).all():
             print 'ERROR: Unable to combine histograms, binning is different'
             return hist1
         xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
@@ -554,12 +666,15 @@ def __combine_single_hists(hist1, hist2):
         yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
         if not (xunits1 == xunits2 and yunits1 == yunits2):
             print 'ERROR: Unable to combine histograms, units mismatch.'
-        res.data[:,3] += hist2.data[:,3]
-        res.data[:,4] = sqrt(res.data [:,4]**2 + hist2.data[:,4]**2)
+        res.data[:, 3] += hist2.data[:, 3]
+        res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)
         return res
     elif hist1.type == hist2.type == 'Histogram2D':
         res = histdata(copyhist = hist1)
-        if not (res.data[:,0] == hist2.data[:,0]).all() or not (res.data[:,1] == hist2.data[:,1]).all() or not (res.data[:,2] == hist2.data[:,2]).all() or not (res.data[:,3] == hist2.data[:,3]).all():
+        if not (res.data[:, 0] == hist2.data[:, 0]).all() or not \
+            (res.data[:, 1] == hist2.data[:, 1]).all() or not \
+            (res.data[:, 2] == hist2.data[:, 2]).all() or not \
+            (res.data[:, 3] == hist2.data[:, 3]).all():
             print 'ERROR: Unable to combine histograms, binning is different'
             return hist1
         xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
@@ -568,10 +683,11 @@ def __combine_single_hists(hist1, hist2):
         xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
         yunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
         zunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
-        if not (xunits1 == xunits2 and yunits1 == yunits2 and zunits1 == zunits2):
+        if not (xunits1 == xunits2 and yunits1 == yunits2 and\
+            zunits1 == zunits2):
             print 'ERROR: Unable to combine histograms, units mismatch.'
-        res.data[:,4] += hist2.data[:,4]
-        res.data[:,5] = sqrt(res.data [:,5]**2 + hist2.data[:,5]**2)
+        res.data[:, 4] += hist2.data[:, 4]
+        res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)
         return res
         
 def add_histograms(*args):
@@ -592,7 +708,8 @@ def plot_primaries(results, *args, **kwargs):
         plot_1d_hist(results.primhists[particle], *args, **kwargs)
     return
     
-def plot_proton_alpha(results, detector, scale_per_nuc = True, *args, **kwargs):
+def plot_proton_alpha(results, detector, scale_per_nuc = True,
+                      *args, **kwargs):
     """Plot downward proton and alpha fluxes at the given detector."""
     plot_1d_hist(results.flux_down['proton'][detector], *args, **kwargs)
     if scale_per_nuc:
@@ -606,13 +723,16 @@ def plot_neutrals(results, detector, *args, **kwargs):
     plot_1d_hist(results.flux_down['gamma'][detector], *args, **kwargs)
     return
     
-def plot_proton_alpha_comparison(results, detector, scale_per_nuc = True, *args, **kwargs):
+def plot_proton_alpha_comparison(results, detector, scale_per_nuc = True,
+                                 *args, **kwargs):
     """Plot primary, proton/alpha and neutral downward fluxes at detector."""
     plot_primaries(results, *args, **kwargs)
-    plot_proton_alpha(results, detector, scale_per_nuc = scale_per_nuc, *args, **kwargs)
+    plot_proton_alpha(results, detector, scale_per_nuc = scale_per_nuc, 
+                      *args, **kwargs)
     return
     
-def plot_cosmonuc_comparison(results1, results2, label1 = None, label2 = None, legend = True, *args, **kwargs):
+def plot_cosmonuc_comparison(results1, results2, label1 = None, 
+                             label2 = None, legend = True, *args, **kwargs):
     """Plot a comparison of two cosmogenic nuclide histograms."""
     for entry in ['label', 'lw', 's', 'marker', 'edgecolor', 'legend']:
         if entry in kwargs:
@@ -622,22 +742,28 @@ def plot_cosmonuc_comparison(results1, results2, label1 = None, label2 = None, l
     else:
         plot_cosmonuc(results1, label = label1, *args, **kwargs)
     if label2 is None:
-        plot_cosmonuc(results2, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
+        plot_cosmonuc(results2, marker = 'o', lw = 1, edgecolor = 'w', 
+                      s = 100, *args, **kwargs)
     else:
-        plot_cosmonuc(results2, label = label2, marker = 'o', lw = 1, edgecolor = 'w', s = 100, *args, **kwargs)
+        plot_cosmonuc(results2, label = label2, marker = 'o', lw = 1, 
+                      edgecolor = 'w', s = 100, *args, **kwargs)
     if legend:
         plt.legend(loc = 'upper left')
     plt.title('Comparison of cosmogenic nuclide production')
     return
     
 def get_normalization_factors(results):
-    """Get a dictionary with the normalization factors for all particles in the flux_up and flux_down sections of the given results."""
+    """Get a dictionary with the normalization factors for all particles in 
+    the flux_up and flux_down sections of the given results."""
     res = {}
     for flux_list in [results.flux_down, results.flux_up]:
         for particle in flux_list:
-            detector = flux_list[particle].keys()[-1] #this is a completely arbitrary choice
-            if 'normalisation_factor' in flux_list[particle][detector].params:
-                factor = flux_list[particle][detector].params['normalisation_factor']
+            #this is a completely arbitrary choice
+            detector = flux_list[particle].keys()[-1] 
+            if 'normalisation_factor' in flux_list\
+                [particle][detector].params:
+                factor = flux_list[particle][detector].params\
+                    ['normalisation_factor']
             else:
                 factor = nan
             if not particle in res:
@@ -645,7 +771,8 @@ def get_normalization_factors(results):
     return res
     
 def print_list_info(histlist, indices = None):
-    """Prints information on histograms in the given histogram list. Optional second argument selects the indices to print."""
+    """Prints information on histograms in the given histogram list. 
+    Optional second argument selects the indices to print."""
     if indices is None or type(indices) == dict:
         indices = arange(0, len(histlist))
     if not hasattr(histlist, '__iter__'):
@@ -656,41 +783,52 @@ def print_list_info(histlist, indices = None):
             indices = arange(0, len(histlist))
     message = ''
     for index in indices:
-        message += '{index: >3d}'.format(index = index) + ': {particle: <10s}'.format(particle = histlist[index].particle) + ', detector {detector: >3d}'.format(detector = histlist[index].detector) + ': '
+        message += '{index: >3d}'.format(index = index) + \
+            ': {particle: <10s}'.format(particle = histlist[index].particle)\
+            + ', detector {detector: >3d}'.format(
+                detector = histlist[index].detector) + ': '
         message += histlist[index].params['Title'] + '\n'
     print message[:-1]
     return
 
 def integrate_fluxhist(histogram, limits = None):
-    """Integrates the flux stored in the given 1D histogram. Pass a tuple (Emin, Emax) as second argument to set the integration range."""
+    """Integrates the flux stored in the given 1D histogram. Pass a tuple 
+    (Emin, Emax) as second argument to set the integration range."""
     if isinstance(histogram, histdata):
         if not limits is None:
-            mask = (histogram.data[:,0] >= limits[0]) * (histogram.data[:,1] <= limits[1])
+            mask = (histogram.data[:, 0] >= limits[0]) * \
+                (histogram.data[:, 1] <= limits[1])
         else:
             mask = ones(len(histogram.data), dtype = bool)
-        return sum(histogram.data[:,3][mask])
+        return sum(histogram.data[:, 3][mask])
     elif type(histogram) == dict:
         if not limits is None:
-            mask = (histogram['x'] >= limits[0]) * (histogram['x'] <= limits[1])
+            mask = (histogram['x'] >= limits[0]) * \
+                (histogram['x'] <= limits[1])
         else:
             mask = ones(len(histogram['x']), dtype = bool)
         return sum(histogram['y'][mask])
         
 def integrate_2d_fluxhist(histogram, xlimits = None, ylimits = None):
-    """Integrates the flux stored in the given 2D histogram. Pass a tuple (Emin, Emax) as xlimits or ylimits keyword arguments to set the integration range."""
+    """Integrates the flux stored in the given 2D histogram. Pass a tuple 
+    (Emin, Emax) as xlimits or ylimits keyword arguments to set the 
+    integration range."""
     if not xlimits is None:
-        xmask = (histogram.data[:,0] >= xlimits[0]) * (histogram.data[:,1] <= xlimits[1])
+        xmask = (histogram.data[:, 0] >= xlimits[0]) * \
+            (histogram.data[:, 1] <= xlimits[1])
     else:
         xmask = ones(len(histogram.data), dtype = bool)
     if not ylimits is None:
-        ymask = (histogram.data[:,2] >= ylimits[0]) * (histogram.data[:,3] <= ylimits[1])
+        ymask = (histogram.data[:, 2] >= ylimits[0]) * \
+            (histogram.data[:, 3] <= ylimits[1])
     else:
         ymask = ones(len(histogram.data), dtype = bool)
     mask = xmask * ymask
-    return sum(histogram.data[:,4][mask])
+    return sum(histogram.data[:, 4][mask])
     
 def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
-    """Project data in a 2D histogram onto either the X or the Y axis and return the resulting 1D histogram."""
+    """Project data in a 2D histogram onto either the X or the Y axis 
+    and return the resulting 1D histogram."""
     if not axis in ['x', 'y']:
         print 'ERROR: Invalid axis selection'
         return None
@@ -699,11 +837,13 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
         return
     #apply selected limits
     if not xlimits is None:
-        xmask = (histogram.data[:,0] >= xlimits[0]) * (histogram.data[:,1] <= xlimits[1])
+        xmask = (histogram.data[:, 0] >= xlimits[0]) * \
+            (histogram.data[:, 1] <= xlimits[1])
     else:
         xmask = ones(len(histogram.data), dtype = bool)
     if not ylimits is None:
-        ymask = (histogram.data[:,2] >= ylimits[0]) * (histogram.data[:,3] <= ylimits[1])
+        ymask = (histogram.data[:, 2] >= ylimits[0]) * \
+            (histogram.data[:, 3] <= ylimits[1])
     else:
         ymask = ones(len(histogram.data), dtype = bool)
     mask = xmask * ymask
@@ -732,7 +872,8 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
     for line in data:
         index = -1
         for i in arange(0, len(bindata)):
-            if line[index_lower] == binslower[i] and line[index_upper] == binsupper[i]:
+            if line[index_lower] == binslower[i] and \
+                line[index_upper] == binsupper[i]:
                 index = i
                 break
         if not index == -1:
@@ -741,7 +882,8 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
         else:
             print 'WARNING: Skipping data point, bin not found'
     binmiddles = binslower + (binsupper - binslower) / 2
-    resdata = column_stack((binslower, binsupper, binmiddles, bindata, binerrors))
+    resdata = column_stack((binslower, binsupper, 
+                            binmiddles, bindata, binerrors))
     #build result histdata object
     res = histdata()
     res.data = resdata
@@ -766,7 +908,8 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
             xlabel = tmp2
         else:
             xlabel = tmp1
-        limits_string += str(amin(xlimits)) + '<=' + xlabel + '<=' + str(amax(xlimits))
+        limits_string += str(amin(xlimits)) + '<=' + xlabel + '<=' + \
+            str(amax(xlimits))
     if not ylimits is None:
         limits_string += ', '
         tmp1, tmp2 = __parse_title(histogram.params['Yaxis'])
@@ -774,7 +917,8 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
             ylabel = tmp2
         else:
             ylabel = tmp1
-        limits_string += str(amin(ylimits)) + '<=' + ylabel + '<=' + str(amax(ylimits))
+        limits_string += str(amin(ylimits)) + '<=' + ylabel + '<=' + \
+            str(amax(ylimits))
     tmp1, tmp2 = __parse_title(histogram.params[axis.upper() + 'axis'])
     if tmp1 is None:
         axislabel = tmp2
