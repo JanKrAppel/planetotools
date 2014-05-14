@@ -5,7 +5,7 @@ instances."""
 import re
 from numpy import *
 from matplotlib import pyplot as plt
-from planetoparse import planetoparse, histdata
+from planetoparse import *
 
 if not plt.isinteractive():
     plt.ion()
