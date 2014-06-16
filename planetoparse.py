@@ -366,7 +366,7 @@ class planetoparse:
             try:
                 from planetoparse_cfg import sort_config
             except ImportError:
-                self.sort_config = DEFAULT_SORT_CONFIG
+                sort_config = DEFAULT_SORT_CONFIG
         sort_conf_keys = sort_config.keys()
         sort_conf_keys.sort()
         req_keys = DEFAULT_SORT_CONFIG.keys()
