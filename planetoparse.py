@@ -264,7 +264,7 @@ class histdata:
         macrofile.close()
         return
             
-    def save_as_2d_gps(self, filename, shape = ''):
+    def save_as_2d_gps(self, filename, shape = '', thetalimits = None):
         """Saves the histogram information in a set of Geant4 GPS gun
         commands that will recreate this spectrum. Only really works
         with Ekin vs cos theta histograms."""
@@ -301,13 +301,14 @@ class histdata:
                 data[:, 0][mask]))
             source_intensity = intensity * flux / total_flux
             if not source_intensity == 0.:
-                string = self.__gen_1d_gps(data, shape, source_intensity)
+                string = self.__gen_1d_gps(data, shape, source_intensity, 
+                                           thetalimits = thetalimits)
                 macrofile.write(string)
                 macrofile.write('\n')
         macrofile.close()
         return
         
-    def __gen_1d_gps(self, hist, shape, intensity):
+    def __gen_1d_gps(self, hist, shape, intensity, thetalimits):
         """Generates a representation of the histogram data as a 1D Geant4
         GPS gun command sequence."""
         #make data copy
@@ -327,7 +328,14 @@ class histdata:
         res += '/gps/ang/type user\n'
         res += '/gps/hist/type theta\n'
         #prepare the data array:
-        mask = (data[:, 2] < 0.) * (data[:, 3] < 0.)
+        mask = ones(len(data[:,0]), dtype = bool)
+        if not thetalimits is None:
+            thetalimits = cos(array(thetalimits) + pi/2)
+            costhetamin = amin(thetalimits)
+            costhetamax = amax(thetalimits)
+            thetamasklower = (data[:, 2] > costhetamin) * (data[:, 2] < costhetamax)
+            thetamaskupper = (data[:, 3] > costhetamin) * (data[:, 3] < costhetamax)
+            mask = mask * thetamasklower * thetamaskupper
         data = data[mask]
         data[:, 2] = arccos(data[:, 2]) - pi/2
         data[:, 3] = arccos(data[:, 3]) - pi/2
