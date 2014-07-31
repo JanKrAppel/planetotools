@@ -423,7 +423,7 @@ def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
     plt.show(block = False)
     return
     
-def combine_histograms(*args):
+def combine_histograms(*args, scale_by = 1.):
     """Combines the different histograms for multiple planetoparse instances.
     WARNING: Only the primaries count, cosmonuc 2D histograms, primary 
     particle fluxes and up/down flux histograms are combined!"""
@@ -462,7 +462,8 @@ def combine_histograms(*args):
                         res.flux_up[particle][detector] = \
                             __combine_single_hists(
                                 res.flux_up[particle][detector], 
-                                addthis.flux_up[particle][detector])
+                                addthis.flux_up[particle][detector], 
+                                scale_by = scale_by)
                     else:
                         res.flux_up[particle][detector] = \
                             histdata(copyhist = \
@@ -476,7 +477,8 @@ def combine_histograms(*args):
                         res.flux_down[particle][detector] = \
                             __combine_single_hists(
                                 res.flux_down[particle][detector], 
-                                addthis.flux_down[particle][detector])
+                                addthis.flux_down[particle][detector], 
+                                scale_by = scale_by)
                     else:
                         res.flux_down[particle][detector] = \
                             histdata(copyhist = \
@@ -500,7 +502,8 @@ def combine_histograms(*args):
                             if addtitle == restitle:
                                 res.edep_atmo[j] = __combine_single_hists(
                                     res.primhists[particle][j],
-                                    addthis.primhists[particle][i])
+                                    addthis.primhists[particle][i], 
+                                    scale_by = scale_by)
                                 added = True
                         if not added:
                             res.edep_atmo.append(histdata(
@@ -517,7 +520,8 @@ def combine_histograms(*args):
                     if addtitle == restitle and addthis.hists1d[i].detector\
                         == res.hists1d[j].detector:
                         res.hists2d[j] = __combine_single_hists(
-                            res.hists1d[j], addthis.hists1d[i])
+                            res.hists1d[j], addthis.hists1d[i], 
+                            scale_by = scale_by)
                         added = True
                 if not added:
                     res.hists2d.append(histdata(
@@ -534,7 +538,8 @@ def combine_histograms(*args):
                     if addtitle == restitle and addthis.hists2d[i].detector\
                         == res.hists2d[j].detector:
                         res.hists2d[j] = __combine_single_hists(
-                            res.hists2d[j], addthis.hists2d[i])
+                            res.hists2d[j], addthis.hists2d[i], 
+                            scale_by = scale_by)
                         added = True
                 if not added:
                     res.hists2d.append(histdata(
@@ -563,7 +568,7 @@ def combine_histograms(*args):
                                             res.flux2d_up[particle]\
                                                 [detector][j], 
                                         addthis.flux2d_up[particle]\
-                                            [detector][i])
+                                            [detector][i], scale_by = scale_by)
                                     added = True
                             if not added:
                                 res.flux2d_up[particle][detector].append(
@@ -599,7 +604,8 @@ def combine_histograms(*args):
                                             res.flux2d_down[particle]\
                                                 [detector][j], addthis.\
                                                 flux2d_down[particle]\
-                                                [detector][i])
+                                                [detector][i], 
+                                                scale_by = scale_by)
                                     added = True
                             if not added:
                                 res.flux2d_down[particle][detector].append(
@@ -621,7 +627,8 @@ def combine_histograms(*args):
                         res.edep_atmo[j].params['Title'])[0]
                     if addtitle == restitle:
                         res.edep_atmo[j] = __combine_single_hists(
-                            res.edep_atmo[j], addthis.edep_atmo[i])
+                            res.edep_atmo[j], addthis.edep_atmo[i], 
+                            scale_by = scale_by)
                         added = True
                 if not added:
                     res.edep_atmo.append(
@@ -637,7 +644,8 @@ def combine_histograms(*args):
                         res.edep_soil[j].params['Title'])[0]
                     if addtitle == restitle:
                         res.edep_soil[j] = __combine_single_hists(
-                            res.edep_soil[j], addthis.edep_soil[i])
+                            res.edep_soil[j], addthis.edep_soil[i], 
+                            scale_by = scale_by)
                         added = True
                 if not added:
                     res.edep_soil.append(histdata(
@@ -647,7 +655,7 @@ def combine_histograms(*args):
     else:
         return args[0]
         
-def __combine_single_hists(hist1, hist2):
+def __combine_single_hists(hist1, hist2, scale_by = 1.):
     """Combine two histograms into one."""
     from planetoparse import histdata
     if not hist1.type == hist2.type:
@@ -667,6 +675,7 @@ def __combine_single_hists(hist1, hist2):
         if not (xunits1 == xunits2 and yunits1 == yunits2):
             print 'ERROR: Unable to combine histograms, units mismatch.'
         res.data[:, 3] += hist2.data[:, 3]
+        res.data[:,3] /= scale_by
         res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)
         return res
     elif hist1.type == hist2.type == 'Histogram2D':
@@ -687,15 +696,16 @@ def __combine_single_hists(hist1, hist2):
             zunits1 == zunits2):
             print 'ERROR: Unable to combine histograms, units mismatch.'
         res.data[:, 4] += hist2.data[:, 4]
+        res.data[:,4] /= scale_by
         res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)
         return res
         
-def add_histograms(*args):
+def add_histograms(*args, scale_by = 1.):
     """Add single histograms."""
     if len(args) > 1:
         res = histdata(copyhist = args[0])
         for hist in args[1:]:
-            res = __combine_single_hists(res, hist)
+            res = __combine_single_hists(res, hist, scale_by = scale_by)
         return res
     else:
         return args[0]
