@@ -403,7 +403,22 @@ class planetoparse:
         
     def parse_file(self, filename, verbosity = 0):
         """Parse a Planetocosmics ASCII output file."""
-        infile = open(filename, 'r')
+        import os
+        import sys
+        import cStringIO
+        import subprocess
+        if filename.endswith('.ascii.tar.gz'):    
+            p = subprocess.Popen(["tar", "-xOzf", filename], stdout = subprocess.PIPE)
+            infile = cStringIO.StringIO(p.communicate()[0])
+            assert p.returncode == 0
+        elif filename.endswith('.ascii.gz'):          
+            p = subprocess.Popen(["zcat", filename], stdout = subprocess.PIPE)
+            infile = cStringIO.StringIO(p.communicate()[0])
+            assert p.returncode == 0
+        elif filename.endswith('.ascii'): 
+            infile = open(filename, 'r')
+        else:
+            print 'ERROR: Unknown file type. Please load .ascii, .tar.gz or .gz files'
         line = infile.readline()
         while not line == '':
             #parse global information
