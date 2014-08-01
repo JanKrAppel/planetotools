@@ -423,7 +423,7 @@ def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
     plt.show(block = False)
     return
     
-def combine_histograms(*args, scale_by = 1.):
+def combine_histograms(scale_by = 1., *args):
     """Combines the different histograms for multiple planetoparse instances.
     WARNING: Only the primaries count, cosmonuc 2D histograms, primary 
     particle fluxes and up/down flux histograms are combined!"""
@@ -700,7 +700,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
         res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)
         return res
         
-def add_histograms(*args, scale_by = 1.):
+def add_histograms(scale_by = 1.,*args):
     """Add single histograms."""
     if len(args) > 1:
         res = histdata(copyhist = args[0])
