@@ -418,7 +418,8 @@ class planetoparse:
         elif filename.endswith('.ascii'): 
             infile = open(filename, 'r')
         else:
-            print 'ERROR: Unknown file type. Please load .ascii, .tar.gz or .gz files'
+            print 'ERROR: Unknown file type. Please load .ascii, .tar.gz or .gz files. Continue at own risk'
+            infile = open(filename, 'r')
         line = infile.readline()
         while not line == '':
             #parse global information
