@@ -716,7 +716,6 @@ class planetoparse:
         self.flux2d_down = cPickle.load(infile)
         self.cosmonuc = cPickle.load(infile)
         self.hists1d = cPickle.load(infile)
-
         self.flux_up = cPickle.load(infile)
         self.flux_down = cPickle.load(infile)
         self.edep_soil = cPickle.load(infile)
@@ -739,7 +738,7 @@ class planetoparse:
         
     def save_ascii(self, filename, gzip_flag = True):
         """Save the contained Planetocosmics result information into an 
-        ASCII file for later use."""
+        (gziped) ASCII file for later use."""
         import gzip
         if gzip_flag: 
             outfile = gzip.open(filename + '.ascii.gz', 'wb')
