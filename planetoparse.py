@@ -677,10 +677,14 @@ class planetoparse:
             self.hists1d.append(res)
         return infile, line
         
-    def save(self, filename):
+    def save(self, filename, gzip_flag = True):
+        import gzip
         """Save the contained Planetocosmics result information into a 
-        binary file for later use."""
-        outfile = open(filename, 'wb')
+        binary gziped file for later use."""
+        if gzip_flag: 
+            outfile = gzip.open(filename + '.gz', 'wb')
+        else:
+            outfile = open(filename, 'wb')
         cPickle.dump(self.primaries, outfile)
         cPickle.dump(self.normalisation, outfile)
         cPickle.dump(self.params, outfile)
@@ -698,8 +702,12 @@ class planetoparse:
         return
         
     def load(self, filename, print_stats = False):
-        """Load the Planetocosmics result information from a binary file."""
-        infile = open(filename, 'rb')
+        """Load the (gziped) Planetocosmics result information from a binary file."""
+        import gzip
+        if filename.endswith('.gz') and not filename.endswith('.tar.gz'): 
+            infile = gzip.open(filename, 'rb')
+        else:
+            infile = open(filename, 'rb')
         self.primaries = cPickle.load(infile)
         self.normalisation = cPickle.load(infile)
         self.params = cPickle.load(infile)
@@ -708,6 +716,7 @@ class planetoparse:
         self.flux2d_down = cPickle.load(infile)
         self.cosmonuc = cPickle.load(infile)
         self.hists1d = cPickle.load(infile)
+
         self.flux_up = cPickle.load(infile)
         self.flux_down = cPickle.load(infile)
         self.edep_soil = cPickle.load(infile)
@@ -728,10 +737,14 @@ class planetoparse:
         savetxt(outfile, hist.data)
         return        
         
-    def save_ascii(self, filename):
+    def save_ascii(self, filename, gzip_flag = True):
         """Save the contained Planetocosmics result information into an 
         ASCII file for later use."""
-        outfile = open(filename, 'w')
+        import gzip
+        if gzip_flag: 
+            outfile = gzip.open(filename + '.ascii.gz', 'wb')
+        else:
+            outfile = open(filename + '.ascii', 'w')
         outfile.write('nb_of_primaries : ' + str(self.primaries) + '\n')
         outfile.write('normalisation_type : ' + str(self.normalisation) +\
             '\n')
