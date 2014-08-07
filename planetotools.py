@@ -12,8 +12,9 @@ except ImportError:
     plotting_available = False
 from planetoparse import *
 
-if not plt.isinteractive():
-    plt.ion()
+if plotting_available:
+    if not plt.isinteractive():
+        plt.ion()
 
 def __parse_title(title):
     """Parses plot title and unit information from planetoparse plot titles.
