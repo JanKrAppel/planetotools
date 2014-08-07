@@ -4,7 +4,12 @@ instances."""
 
 import re
 from numpy import *
-from matplotlib import pyplot as plt
+plotting_available = True
+try:
+    from matplotlib import pyplot as plt
+except ImportError:
+    print 'WARNING: matplotlib not available, plotting functions not available'
+    plotting_available = False
 from planetoparse import *
 
 if not plt.isinteractive():
@@ -143,130 +148,133 @@ def convert_edep_to_LET(profile, atmodata):
     title = re.sub('Deposited energy', 'LET', title)
     res.params['Title'] = title + ' [keV/um]'
     return res
-        
-def plot_edep_profile(hist, *args, **kwargs):
-    """Plots energy deposition profiles. Pass the profile as available 
-    through planetoparse to plot, additional arguments are passed to the 
-    Matplotlib plotting function (errorbar)."""
-    if hist.isempty():
-        print 'WARNING: Unable to plot, histogram is all-zero.'
-        return
-    if not 'capsize' in kwargs:
-        capsize = 0
-    else:
-        capsize = kwargs['capsize']
-        kwargs.pop('capsize')
-    bin_width = hist.data[:, 1] - hist.data[:, 0]
-    plt.errorbar(hist.data[:, 3] / bin_width, hist.data[:, 2], 
-                 xerr = hist.data[:,4] / bin_width, marker='.', 
-                 capsize = capsize, *args, **kwargs)
-    title, xunits = __parse_title(hist.params['Title'])
-    ylabel, yunits = __parse_title(hist.params['Xaxis'])
-    __check_xy_units(xunits, yunits)
-    plt.title(title)
-    plt.xlabel('Deposited energy / ' + xunits)
-    plt.ylabel(ylabel + ' / ' + yunits)
-    plt.xscale('log')
-    plt.ylim(amin(hist.data[:, 2]), amax(hist.data[:, 2]))
-    plt.show(block = False)
-    return
-    
-def plot_1d_hist(hist, scale_by = 1., label_detector = False, 
-                 scale_by_width = True, xlims = (-inf, inf), 
-                 energy_scale = None, *args, **kwargs):
-    """Plots 1D histograms. Pass the histogram as available through 
-    planetoparse to plot, additional arguments are passed to the Matplotlib 
-    plotting function (errorbar)."""
-    if hist.isempty():
-        print 'WARNING: Unable to plot, histogram is all-zero.'
-        return
-    if not 'label' in kwargs:
-        label = hist.particle
-        if label_detector:
-            label += ', detector ' + str(hist.detector)
-    else:
-        label = kwargs['label']
-        kwargs.pop('label')
-    if not 'capsize' in kwargs:
-        capsize = 0
-    else:
-        capsize = kwargs['capsize']
-        kwargs.pop('capsize')
-    mask = (hist.data[:, 2] > xlims[0]) * (hist.data[:, 2] < xlims[1])
-    data = hist.data[mask]
-    if not energy_scale in ENERGY_SCALERS:
-        print 'WARNING: Invalid energy scale specified, defaulting to MeV'
-        energy_scale = None
-    data[:, :3] *= ENERGY_SCALERS[energy_scale]
-    params = {}
-    for entry in hist.params:
-        params[entry] = hist.params[entry]
-    if not energy_scale is None:
-        tmp = __parse_title(params['Xaxis'])
-        if not tmp[0] is None:
-            params['Xaxis'] = tmp[0] + '[' + energy_scale + ']'
-    if scale_by_width:
-        bin_width = data[:, 1] - data[:, 0]
-        if (bin_width == 0.).all():
-            print 'WARNING: Unable to scale by bin width'
-            scale_by_width = False
-            bin_width = ones(len(bin_width))
-    else:
-        bin_width = ones(len(data))
-    plt.errorbar(data[:, 2], data[:, 3] * scale_by / bin_width,
-                 xerr = bin_width / 2, 
-                 yerr = data[:, 4] * scale_by / bin_width, marker='.',
-                 label = label, capsize = capsize, *args, **kwargs)
-    title, units = __parse_title(params['Title'])
-    plt.title(title)
-    xlabel, xunits = __parse_title(params['Xaxis'])
-    if xlabel is None:
-        xlabel = params['Xaxis']
-    else:
-        xunits = __normalize_units(xunits)
-        xlabel += ' / ' + xunits
-    if scale_by_width and not xunits is None:
-        yunits = __normalize_units(units + '/' + xunits)
-    elif scale_by_width and xunits is None:
-        yunits = __normalize_units(units)
-    else:
-        yunits = __normalize_units(units)
-    __check_xy_units(xunits, yunits)
-    plt.xlabel(xlabel)
-    plt.ylabel(yunits)
-    if __is_logscale(hist.data[:, 2]):
+
+if plotting_available:
+    def plot_edep_profile(hist, *args, **kwargs):
+        """Plots energy deposition profiles. Pass the profile as available 
+        through planetoparse to plot, additional arguments are passed to the 
+        Matplotlib plotting function (errorbar)."""
+        if hist.isempty():
+            print 'WARNING: Unable to plot, histogram is all-zero.'
+            return
+        if not 'capsize' in kwargs:
+            capsize = 0
+        else:
+            capsize = kwargs['capsize']
+            kwargs.pop('capsize')
+        bin_width = hist.data[:, 1] - hist.data[:, 0]
+        plt.errorbar(hist.data[:, 3] / bin_width, hist.data[:, 2], 
+                     xerr = hist.data[:,4] / bin_width, marker='.', 
+                     capsize = capsize, *args, **kwargs)
+        title, xunits = __parse_title(hist.params['Title'])
+        ylabel, yunits = __parse_title(hist.params['Xaxis'])
+        __check_xy_units(xunits, yunits)
+        plt.title(title)
+        plt.xlabel('Deposited energy / ' + xunits)
+        plt.ylabel(ylabel + ' / ' + yunits)
         plt.xscale('log')
-    plt.yscale('log')
-    plt.legend(loc = 'best')
-    plt.show(block = False)
-    return
+        plt.ylim(amin(hist.data[:, 2]), amax(hist.data[:, 2]))
+        plt.show(block = False)
+        return
     
-def plot_array_hist(array, scale_by = 1., *args, **kwargs):
-    """Plots 1D histograms from numpy arrays. Additional arguments are passed
-    to the Matplotlib plotting function (errorbar)."""
-    if not 'capsize' in kwargs:
-        capsize = 0
-    else:
-        capsize = kwargs['capsize']
-        kwargs.pop('capsize')
-    #errors are included:
-    if array.shape[1] == 5:
-        bin_width = array[:, 1] - array[:, 0]
-        if (bin_width == 0.).all():
-            print 'WARNING: Unable to scale by bin width'
-            bin_width = ones(len(bin_width))
-        plt.errorbar(array[:, 2], array[:, 3] * scale_by / bin_width, 
+if plotting_available:
+    def plot_1d_hist(hist, scale_by = 1., label_detector = False, 
+                     scale_by_width = True, xlims = (-inf, inf), 
+                     energy_scale = None, *args, **kwargs):
+        """Plots 1D histograms. Pass the histogram as available through 
+        planetoparse to plot, additional arguments are passed to the Matplotlib 
+        plotting function (errorbar)."""
+        if hist.isempty():
+            print 'WARNING: Unable to plot, histogram is all-zero.'
+            return
+        if not 'label' in kwargs:
+            label = hist.particle
+            if label_detector:
+                label += ', detector ' + str(hist.detector)
+        else:
+            label = kwargs['label']
+            kwargs.pop('label')
+        if not 'capsize' in kwargs:
+            capsize = 0
+        else:
+            capsize = kwargs['capsize']
+            kwargs.pop('capsize')
+        mask = (hist.data[:, 2] > xlims[0]) * (hist.data[:, 2] < xlims[1])
+        data = hist.data[mask]
+        if not energy_scale in ENERGY_SCALERS:
+            print 'WARNING: Invalid energy scale specified, defaulting to MeV'
+            energy_scale = None
+        data[:, :3] *= ENERGY_SCALERS[energy_scale]
+        params = {}
+        for entry in hist.params:
+            params[entry] = hist.params[entry]
+        if not energy_scale is None:
+            tmp = __parse_title(params['Xaxis'])
+            if not tmp[0] is None:
+                params['Xaxis'] = tmp[0] + '[' + energy_scale + ']'
+        if scale_by_width:
+            bin_width = data[:, 1] - data[:, 0]
+            if (bin_width == 0.).all():
+                print 'WARNING: Unable to scale by bin width'
+                scale_by_width = False
+                bin_width = ones(len(bin_width))
+        else:
+            bin_width = ones(len(data))
+        plt.errorbar(data[:, 2], data[:, 3] * scale_by / bin_width,
                      xerr = bin_width / 2, 
-                     yerr = array[:, 4] * scale_by / bin_width, 
-                     marker='.', capsize = capsize, *args, **kwargs)
-    #errors are not included, neither are binwidths:
-    elif array.shape[1] == 2:
-        plt.plot(array[:, 0], array[:, 1], *args, **kwargs)
-    if __is_logscale(array[:, 2]):
-        plt.xscale('log')
-    plt.yscale('log')
-    plt.show(block = False)
-    return
+                     yerr = data[:, 4] * scale_by / bin_width, marker='.',
+                     label = label, capsize = capsize, *args, **kwargs)
+        title, units = __parse_title(params['Title'])
+        plt.title(title)
+        xlabel, xunits = __parse_title(params['Xaxis'])
+        if xlabel is None:
+            xlabel = params['Xaxis']
+        else:
+            xunits = __normalize_units(xunits)
+            xlabel += ' / ' + xunits
+        if scale_by_width and not xunits is None:
+            yunits = __normalize_units(units + '/' + xunits)
+        elif scale_by_width and xunits is None:
+            yunits = __normalize_units(units)
+        else:
+            yunits = __normalize_units(units)
+        __check_xy_units(xunits, yunits)
+        plt.xlabel(xlabel)
+        plt.ylabel(yunits)
+        if __is_logscale(hist.data[:, 2]):
+            plt.xscale('log')
+        plt.yscale('log')
+        plt.legend(loc = 'best')
+        plt.show(block = False)
+        return
+    
+if plotting_available:
+    def plot_array_hist(array, scale_by = 1., *args, **kwargs):
+        """Plots 1D histograms from numpy arrays. Additional arguments are passed
+        to the Matplotlib plotting function (errorbar)."""
+        if not 'capsize' in kwargs:
+            capsize = 0
+        else:
+            capsize = kwargs['capsize']
+            kwargs.pop('capsize')
+        #errors are included:
+        if array.shape[1] == 5:
+            bin_width = array[:, 1] - array[:, 0]
+            if (bin_width == 0.).all():
+                print 'WARNING: Unable to scale by bin width'
+                bin_width = ones(len(bin_width))
+            plt.errorbar(array[:, 2], array[:, 3] * scale_by / bin_width, 
+                         xerr = bin_width / 2, 
+                         yerr = array[:, 4] * scale_by / bin_width, 
+                         marker='.', capsize = capsize, *args, **kwargs)
+        #errors are not included, neither are binwidths:
+        elif array.shape[1] == 2:
+            plt.plot(array[:, 0], array[:, 1], *args, **kwargs)
+        if __is_logscale(array[:, 2]):
+            plt.xscale('log')
+        plt.yscale('log')
+        plt.show(block = False)
+        return
     
 def scale_array_per_nuc(array, weight):
     """Scales an array that contains Planetocosmics result data per nucleus.
@@ -280,65 +288,66 @@ def scale_array_per_nuc(array, weight):
     array[:, 3:] *= weight
     return
 
-def plot_2d_hist(hist, logscale = True, scale_by_widths = False,
-                 *args, **kwargs):
-    """Plots 2D histogram data. Pass the histogram as available through 
-    planetoparse to plot."""
-    if hist.isempty():
-        print 'WARNING: Unable to plot, histogram is all-zero.'
-        return
-    if scale_by_widths:
-        data = empty_like(hist.data)
-        data[:] = hist.data
-        data[:, 4] /= data[:, 3] - data[:, 2]
-    else:
-        data = hist.data
-    histdat = []
-    xedges = []
-    yedges = []
-    for line in data:
-        if not line[0] in xedges:
-            xedges.append(line[0])
-        if not line[1] in xedges:
-            xedges.append(line[1])
-        if not line[2] in yedges:
-            yedges.append(line[2])
-        if not line[3] in yedges:
-            yedges.append(line[3])
-        if logscale:
-            histdat.append(log10(line[4]))
+if plotting_available:
+    def plot_2d_hist(hist, logscale = True, scale_by_widths = False,
+                     *args, **kwargs):
+        """Plots 2D histogram data. Pass the histogram as available through 
+        planetoparse to plot."""
+        if hist.isempty():
+            print 'WARNING: Unable to plot, histogram is all-zero.'
+            return
+        if scale_by_widths:
+            data = empty_like(hist.data)
+            data[:] = hist.data
+            data[:, 4] /= data[:, 3] - data[:, 2]
         else:
-            histdat.append(line[4])
-    histdat = array(histdat).reshape((len(xedges) - 1, len(yedges) - 1))
-    histdat[histdat == -inf] = 0.
-    xedges = array(xedges)
-    yedges = array(yedges)
-    xedges.sort()
-    yedges.sort()
-    plt.pcolormesh(xedges, yedges, histdat.transpose(), *args, **kwargs)
-    if __is_logscale(xedges):
-        plt.xscale('log')
-    if __is_logscale(yedges):
-        plt.yscale('log')
-    plt.xlabel(hist.params['Xaxis'])
-    plt.ylabel(hist.params['Yaxis'])
-    fig = plt.gcf()
-    ax = fig.get_axes()
-    title, units = __parse_title(hist.params['Title'])
-    #remove colorbar, if already present
-    if len(ax) == 2:
-        if ax[0].get_title() == title and ax[1].get_title() == '':
-            fig.delaxes(ax[1])
-            fig.subplots_adjust()
-    cbar = plt.colorbar()
-    plt.title(title)
-    if scale_by_widths:
-        units += '/' + __parse_title(hist.params['Xaxis'])[1]
-    if logscale:
-        units = 'log ' + units
-    cbar.set_label(__normalize_units(units))
-    plt.show(block = False)
-    return
+            data = hist.data
+        histdat = []
+        xedges = []
+        yedges = []
+        for line in data:
+            if not line[0] in xedges:
+                xedges.append(line[0])
+            if not line[1] in xedges:
+                xedges.append(line[1])
+            if not line[2] in yedges:
+                yedges.append(line[2])
+            if not line[3] in yedges:
+                yedges.append(line[3])
+            if logscale:
+                histdat.append(log10(line[4]))
+            else:
+                histdat.append(line[4])
+        histdat = array(histdat).reshape((len(xedges) - 1, len(yedges) - 1))
+        histdat[histdat == -inf] = 0.
+        xedges = array(xedges)
+        yedges = array(yedges)
+        xedges.sort()
+        yedges.sort()
+        plt.pcolormesh(xedges, yedges, histdat.transpose(), *args, **kwargs)
+        if __is_logscale(xedges):
+            plt.xscale('log')
+        if __is_logscale(yedges):
+            plt.yscale('log')
+        plt.xlabel(hist.params['Xaxis'])
+        plt.ylabel(hist.params['Yaxis'])
+        fig = plt.gcf()
+        ax = fig.get_axes()
+        title, units = __parse_title(hist.params['Title'])
+        #remove colorbar, if already present
+        if len(ax) == 2:
+            if ax[0].get_title() == title and ax[1].get_title() == '':
+                fig.delaxes(ax[1])
+                fig.subplots_adjust()
+        cbar = plt.colorbar()
+        plt.title(title)
+        if scale_by_widths:
+            units += '/' + __parse_title(hist.params['Xaxis'])[1]
+        if logscale:
+            units = 'log ' + units
+        cbar.set_label(__normalize_units(units))
+        plt.show(block = False)
+        return
     
 def __is_logscale(axis):
     """Checks whether or not a given axis is logscale."""
@@ -347,81 +356,83 @@ def __is_logscale(axis):
     else:
         return True
     
-def plot_cosmonuc(results, logscale = True, *args, **kwargs):
-    """Plots 2D histogram of cosmogenic nuclides. Pass the planetoparse
-    instance to plot."""
-    if results.cosmonuc.isempty():
-        print 'WARNING: Unable to plot, histogram is all-zero.'
+if plotting_available:
+    def plot_cosmonuc(results, logscale = True, *args, **kwargs):
+        """Plots 2D histogram of cosmogenic nuclides. Pass the planetoparse
+        instance to plot."""
+        if results.cosmonuc.isempty():
+            print 'WARNING: Unable to plot, histogram is all-zero.'
+            return
+        if not 's' in kwargs:
+            s = 150
+        else:
+            s = kwargs['s']
+            kwargs.pop('s')
+        if not 'marker' in kwargs:
+            marker = 's'
+        else:
+            marker = kwargs['marker']
+            kwargs.pop('marker')
+        if not 'lw' in kwargs:
+            lw = 0
+        else:
+            lw = kwargs['lw']
+            kwargs.pop('lw')
+        if logscale:
+            c = log10(results.cosmonuc.data[:, 4])
+        else:
+            c = results.cosmonuc.data[:, 4]
+        plt.scatter(results.cosmonuc.data[:, 0] + .5, 
+                    results.cosmonuc.data[:, 2] + .5, c = c, s = s, 
+                    marker = marker, lw = lw, *args, **kwargs)
+        plt.xlabel(results.cosmonuc.params['Xaxis'])
+        plt.ylabel(results.cosmonuc.params['Yaxis'])
+        plt.xlim([0, 25])
+        plt.xticks(arange(0, 26, 2))
+        plt.ylim([0, 25])
+        plt.yticks(arange(0, 26, 2))
+        fig = plt.gcf()
+        ax = fig.get_axes()
+        title, units = __parse_title(results.cosmonuc.params['Title'])
+        #remove colorbar, if already present
+        if len(ax) == 2:
+            if ax[0].get_title() == title and ax[1].get_title() == '':
+                fig.delaxes(ax[1])
+                fig.subplots_adjust()
+        cbar = plt.colorbar()
+        plt.title(title)
+        if logscale:
+            units = 'log ' + units
+        cbar.set_label(units)
+        plt.show(block = False)
         return
-    if not 's' in kwargs:
-        s = 150
-    else:
-        s = kwargs['s']
-        kwargs.pop('s')
-    if not 'marker' in kwargs:
-        marker = 's'
-    else:
-        marker = kwargs['marker']
-        kwargs.pop('marker')
-    if not 'lw' in kwargs:
-        lw = 0
-    else:
-        lw = kwargs['lw']
-        kwargs.pop('lw')
-    if logscale:
-        c = log10(results.cosmonuc.data[:, 4])
-    else:
-        c = results.cosmonuc.data[:, 4]
-    plt.scatter(results.cosmonuc.data[:, 0] + .5, 
-                results.cosmonuc.data[:, 2] + .5, c = c, s = s, 
-                marker = marker, lw = lw, *args, **kwargs)
-    plt.xlabel(results.cosmonuc.params['Xaxis'])
-    plt.ylabel(results.cosmonuc.params['Yaxis'])
-    plt.xlim([0, 25])
-    plt.xticks(arange(0, 26, 2))
-    plt.ylim([0, 25])
-    plt.yticks(arange(0, 26, 2))
-    fig = plt.gcf()
-    ax = fig.get_axes()
-    title, units = __parse_title(results.cosmonuc.params['Title'])
-    #remove colorbar, if already present
-    if len(ax) == 2:
-        if ax[0].get_title() == title and ax[1].get_title() == '':
-            fig.delaxes(ax[1])
-            fig.subplots_adjust()
-    cbar = plt.colorbar()
-    plt.title(title)
-    if logscale:
-        units = 'log ' + units
-    cbar.set_label(units)
-    plt.show(block = False)
-    return
     
-def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
-    """Plots the detector levels of the given flux histograms into the 
-    current plot."""
-    left, right = plt.xlim()
-    if not plot_only == []:
-        detectors = plot_only
-    else:
-        detectors = fluxhists.keys()
-    for detector in dont_plot:
-        if detector in detectors:
-            detectors.remove(detector)
-    altitudes = []
-    for detector in detectors:
-        altitude, alt_unit = \
-            fluxhists[detector].params['Altitude'].split(' ')
-        altitude = float64(altitude)
-        altitudes.append(altitude)
-        plt.plot((left, right), (altitude, altitude), 'k')
-        plt.text(left, altitude + 1., 'Detector ' + str(detector))
-    if not __check_y_units(alt_unit):
-        print 'WARNING: Units mismatch on axis Y'
-    plt.ylim(amin(altitudes), amax(altitudes) + 10)
-    plt.ylabel('Altitude / ' + alt_unit)
-    plt.show(block = False)
-    return
+if plotting_available:
+    def plot_detector_levels(fluxhists, plot_only = [], dont_plot = []):
+        """Plots the detector levels of the given flux histograms into the 
+        current plot."""
+        left, right = plt.xlim()
+        if not plot_only == []:
+            detectors = plot_only
+        else:
+            detectors = fluxhists.keys()
+        for detector in dont_plot:
+            if detector in detectors:
+                detectors.remove(detector)
+        altitudes = []
+        for detector in detectors:
+            altitude, alt_unit = \
+                fluxhists[detector].params['Altitude'].split(' ')
+            altitude = float64(altitude)
+            altitudes.append(altitude)
+            plt.plot((left, right), (altitude, altitude), 'k')
+            plt.text(left, altitude + 1., 'Detector ' + str(detector))
+        if not __check_y_units(alt_unit):
+            print 'WARNING: Units mismatch on axis Y'
+        plt.ylim(amin(altitudes), amax(altitudes) + 10)
+        plt.ylabel('Altitude / ' + alt_unit)
+        plt.show(block = False)
+        return
     
 def combine_histograms(scale_by = 1., *args):
     """Combines the different histograms for multiple planetoparse instances.
@@ -709,59 +720,7 @@ def add_histograms(scale_by = 1.,*args):
         return res
     else:
         return args[0]
-        
-def plot_primaries(results, *args, **kwargs):
-    """Plot all primary particle fluxes in a result."""
-    for particle in results.primhists:
-        if particle == 'alpha':
-            results.primhists[particle].scale_per_nuc(4)
-        plot_1d_hist(results.primhists[particle], *args, **kwargs)
-    return
-    
-def plot_proton_alpha(results, detector, scale_per_nuc = True,
-                      *args, **kwargs):
-    """Plot downward proton and alpha fluxes at the given detector."""
-    plot_1d_hist(results.flux_down['proton'][detector], *args, **kwargs)
-    if scale_per_nuc:
-        results.flux_down['alpha'][detector].scale_per_nuc(4)
-    plot_1d_hist(results.flux_down['alpha'][detector], *args, **kwargs)
-    return
-    
-def plot_neutrals(results, detector, *args, **kwargs):
-    """Plot downward neutron and gamma fluxes at the given detector."""
-    plot_1d_hist(results.flux_down['neutron'][detector], *args, **kwargs)
-    plot_1d_hist(results.flux_down['gamma'][detector], *args, **kwargs)
-    return
-    
-def plot_proton_alpha_comparison(results, detector, scale_per_nuc = True,
-                                 *args, **kwargs):
-    """Plot primary, proton/alpha and neutral downward fluxes at detector."""
-    plot_primaries(results, *args, **kwargs)
-    plot_proton_alpha(results, detector, scale_per_nuc = scale_per_nuc, 
-                      *args, **kwargs)
-    return
-    
-def plot_cosmonuc_comparison(results1, results2, label1 = None, 
-                             label2 = None, legend = True, *args, **kwargs):
-    """Plot a comparison of two cosmogenic nuclide histograms."""
-    for entry in ['label', 'lw', 's', 'marker', 'edgecolor', 'legend']:
-        if entry in kwargs:
-            kwargs.pop(entry)
-    if label1 is None:
-        plot_cosmonuc(results1, *args, **kwargs)
-    else:
-        plot_cosmonuc(results1, label = label1, *args, **kwargs)
-    if label2 is None:
-        plot_cosmonuc(results2, marker = 'o', lw = 1, edgecolor = 'w', 
-                      s = 100, *args, **kwargs)
-    else:
-        plot_cosmonuc(results2, label = label2, marker = 'o', lw = 1, 
-                      edgecolor = 'w', s = 100, *args, **kwargs)
-    if legend:
-        plt.legend(loc = 'upper left')
-    plt.title('Comparison of cosmogenic nuclide production')
-    return
-    
+            
 def get_normalization_factors(results):
     """Get a dictionary with the normalization factors for all particles in 
     the flux_up and flux_down sections of the given results."""
