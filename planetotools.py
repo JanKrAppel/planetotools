@@ -679,6 +679,13 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             (res.data[:, 1] == hist2.data[:, 1]).all() or not \
             (res.data[:, 2] == hist2.data[:, 2]).all():
             print 'WARNING: Histogram binning is different, interpolating.'
+            xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+            yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+            xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+            yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+            if not (xunits1 == xunits2 and yunits1 == yunits2):
+                print 'ERROR: Unable to combine histograms, units mismatch.'
+                return hist1
             from scipy.interpolate import interp1d
             interpolator = interp1d(hist2.data[:, 2], hist2.data[:, 3],
                                     bounds_error = False, fill_value = 0.)
@@ -693,6 +700,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
         yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
         if not (xunits1 == xunits2 and yunits1 == yunits2):
             print 'ERROR: Unable to combine histograms, units mismatch.'
+            return hist1
         res.data[:, 3] += hist2.data[:, 3]
         res.data[:, 3] /= scale_by
         res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)
@@ -704,6 +712,16 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             (res.data[:, 2] == hist2.data[:, 2]).all() or not \
             (res.data[:, 3] == hist2.data[:, 3]).all():
             print 'WARNING: Histogram binning is different, interpolating.'
+            xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+            yunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+            zunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+            xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+            yunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+            zunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+            if not (xunits1 == xunits2 and yunits1 == yunits2 and\
+                zunits1 == zunits2):
+                print 'ERROR: Unable to combine histograms, units mismatch.'
+                return hist1
             from scipy.interpolate import interp1d
             interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
                                     hist2.data[:, 4], bounds_error = False, 
@@ -723,6 +741,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
         if not (xunits1 == xunits2 and yunits1 == yunits2 and\
             zunits1 == zunits2):
             print 'ERROR: Unable to combine histograms, units mismatch.'
+            return hist1
         res.data[:, 4] += hist2.data[:, 4]
         res.data[:, 4] /= scale_by
         res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)
