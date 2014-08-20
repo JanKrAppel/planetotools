@@ -435,11 +435,11 @@ if plotting_available:
         plt.show(block = False)
         return
     
-def combine_histograms(scale_by = 1., *args):
+def combine_histograms(hists, scale_by = 1.):
     """Combines the different histograms for multiple planetoparse instances.
     WARNING: Only the primaries count, cosmonuc 2D histograms, primary 
     particle fluxes and up/down flux histograms are combined!"""
-    if len(args) > 1:
+    if len(hists) > 1:
         res = planetoparse()
         for addthis in args:
             #check and set normalisation
@@ -665,7 +665,7 @@ def combine_histograms(scale_by = 1., *args):
                     added = True
         return res
     else:
-        return args[0]
+        return hists[0]
         
 def __combine_single_hists(hist1, hist2, scale_by = 1.):
     """Combine two histograms into one."""
@@ -747,11 +747,11 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
         res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)
         return res
         
-def add_histograms(scale_by = 1.,*args):
+def add_histograms(hists, scale_by = 1.):
     """Add single histograms."""
-    if len(args) > 1:
-        res = histdata(copyhist = args[0])
-        for hist in args[1:]:
+    if len(hists) > 1:
+        res = histdata(copyhist = hists[0])
+        for hist in hists[1:]:
             res = __combine_single_hists(res, hist, scale_by = scale_by)
         return res
     else:
