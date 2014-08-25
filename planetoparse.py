@@ -365,6 +365,7 @@ class planetoparse:
         self.hists1d = []
         self.flux_up = {}
         self.flux_down = {}
+        self.flux_angular = {}
         self.edep_soil = []
         self.edep_atmo = []
         self.primhists = {}
@@ -386,7 +387,7 @@ class planetoparse:
         if not filename is None:
             self.parse_file(filename, verbosity = verbosity)
         return
-        
+
     def __parse_params(self, line):
         """Parses parameter information. Returns name, value pair if found,
         None, None pair if not found."""
@@ -705,7 +706,7 @@ class planetoparse:
     def load(self, filename, print_stats = False):
         """Load the (gziped) Planetocosmics result information from a binary file."""
         import gzip
-        if filename.endswith('.gz') and not filename.endswith('.tar.gz'): 
+        if filename.endswith('.gz') and not filename.endswith('.tar.gz'):
             infile = gzip.open(filename, 'rb')
         else:
             infile = open(filename, 'rb')
@@ -847,6 +848,30 @@ class planetoparse:
         else:
             print 'Unscaled', count, 'flux histograms'
         return
+
+    def set_angular_flux(self, limits=(-1., 1.), detector_levels=[]):
+        """
+        Sets angular limited flux histos to self.flux_angular.
+        pass angular limits tuple with limits=(-1, 1).
+        If detector_levels list is empty every detector level will be used (default) or
+        if detector_levels=[1,2,3] detector levels 1, 2 and 3 are used for angular conversion.
+        """
+        from planetotools import project_data
+        import copy
+        for hist2d in self.hists2d:
+            title = hist2d.title
+            if '/DET' in title:
+                parse_detector_level = re.match('([a-zA-Z]*)([0-9]*)', title.split('/')[2])
+                detector_level = int(parse_detector_level.group(2))
+                if detector_level in detector_levels or len(detector_levels) == 0:
+                    print 'processing histogram:', title
+                    element = title.split('/')[3]
+                    hist = project_data(hist2d, axis='x', xlimits=None, ylimits=limits)
+                    if not element in self.flux_angular.keys():
+                        self.flux_angular[element] = {}
+                    if not detector_level in self.flux_angular[element].keys():
+                        self.flux_angular[element][detector_level] = {}
+                    self.flux_angular[element][detector_level] = copy.deepcopy(hist)
         
     def combine_highz_isotopes(self, verbosity = 0):
         """Combines available high-Z histograms in flux_up and flux_down into
@@ -854,13 +879,17 @@ class planetoparse:
         string '[0.0]' being present in the particle name. Fluxes are scaled
         to energy/nuc prior to combining, the resulting histogram will have 
         the binning and nuclear weight of the middle isotope."""
-        #do this in flux_up, flux_down
+        #do this in flux_up, flux_down, flux_angular
         if verbosity > 0:
             print 'Combining high-Z histograms in downward flux...'
         self.__combine_highz_flux(self.flux_down, verbosity = verbosity)
         if verbosity > 0:
             print 'Combining high-Z histograms in upward flux...'
-        self.__combine_highz_flux(self.flux_up, verbosity = verbosity)
+        self.__combine_highz_flux(self.flux_up, verbosity=verbosity)
+        if len(self.flux_angular) > 0:
+            if verbosity > 0:
+                print 'Combining high-Z histograms in angular flux...'
+            self.__combine_highz_flux(self.flux_angular, verbosity=verbosity)
         return
         
     def __get_highz_element_list(self, flux_list):
@@ -882,7 +911,7 @@ class planetoparse:
                     elements[parse_isotope.group(1)].append(
                         parse_isotope.group(2))
         return elements
-        
+
     def __combine_highz_flux(self, flux_list, verbosity = 0):
         """Combines high-Z flux histograms into one for each element."""
         elements = self.__get_highz_element_list(flux_list)
