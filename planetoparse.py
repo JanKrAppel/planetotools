@@ -714,6 +714,7 @@ class planetoparse:
         cPickle.dump(self.edep_soil, outfile)
         cPickle.dump(self.edep_atmo, outfile)
         cPickle.dump(self.primhists, outfile)
+        cPickle.dump(self.flux_angular, outfile)
         outfile.close()
         return
         
