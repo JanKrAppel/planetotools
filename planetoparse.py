@@ -765,6 +765,8 @@ class planetoparse:
             outfile = gzip.open(filename + '.ascii.gz', 'wb')
         else:
             outfile = open(filename + '.ascii', 'w')
+        if len(self.flux_angular) > 0:
+            print 'WARNING: flux_angular will not be saved.'
         outfile.write('nb_of_primaries : ' + str(self.primaries) + '\n')
         outfile.write('normalisation_type : ' + str(self.normalisation) +\
             '\n')
