@@ -498,6 +498,13 @@ class planetoparse:
                 len(self.flux_down[self.flux_down.keys()[0]])
         else:
             print 'No downward flux histograms'
+        if not len(self.flux_angular) == 0:
+            print 'Angular flux histograms:', len(self.flux_angular)*\
+                len(self.flux_angular[self.flux_angular.keys()[0]])
+            count += len(self.flux_angular)*\
+                len(self.flux_angular[self.flux_angular.keys()[0]])
+        else:
+            print 'No angular flux histograms'
         print 'Other 1D histograms:', len(self.hists1d)
         count += len(self.hists1d)
         print
