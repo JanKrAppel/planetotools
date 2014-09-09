@@ -738,6 +738,7 @@ class planetoparse:
         self.edep_soil = cPickle.load(infile)
         self.edep_atmo = cPickle.load(infile)
         self.primhists = cPickle.load(infile)
+        self.flux_angular = cPickle.load(infile)
         infile.close()
         if print_stats:
             self.print_stats()
