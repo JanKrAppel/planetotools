@@ -581,6 +581,13 @@ class planetoparse:
                     message += '\tflux_up, particle ' + particle +\
                         ', detector ' + str(detector) + '\n'
                     count += 1
+        #flux_angular:
+        for particle in self.flux_angular:
+            for detector in self.flux_angular[particle]:
+                if self.flux_angular[particle][detector].isempty():
+                    message += '\tflux_angular, particle ' + particle +\
+                        ', detector ' + str(detector) + '\n'
+                    count += 1
         #hists1d:
         for hist in self.hists2d:
             if hist.isempty():
