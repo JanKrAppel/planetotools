@@ -857,21 +857,18 @@ class planetoparse:
         if detector_levels=[1,2,3] detector levels 1, 2 and 3 are used for angular conversion.
         """
         from planetotools import project_data
-        import copy
         for hist2d in self.hists2d:
             title = hist2d.title
-            if '/DET' in title:
-                parse_detector_level = re.match('([a-zA-Z]*)([0-9]*)', title.split('/')[2])
-                detector_level = int(parse_detector_level.group(2))
+            if '/DET' in title and '/CosZenVsEkin' in title:
+                detector_level = int(re.match('([a-zA-Z]*)([0-9]*)', title.split('/')[2]).group(2))
                 if detector_level in detector_levels or len(detector_levels) == 0:
-                    print 'processing histogram:', title
+                    print 'Processing histogram:', title
                     element = title.split('/')[3]
                     hist = project_data(hist2d, axis='x', xlimits=None, ylimits=limits)
-                    if not element in self.flux_angular.keys():
+                    if not element in self.flux_angular:
                         self.flux_angular[element] = {}
-                    if not detector_level in self.flux_angular[element].keys():
-                        self.flux_angular[element][detector_level] = {}
-                    self.flux_angular[element][detector_level] = copy.deepcopy(hist)
+                    if not detector_level in self.flux_angular[element]:
+                        self.flux_angular[element][detector_level] = histdata(copyhist=hist)
         
     def combine_highz_isotopes(self, verbosity = 0):
         """Combines available high-Z histograms in flux_up and flux_down into
