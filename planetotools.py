@@ -298,9 +298,10 @@ if plotting_available:
             print 'WARNING: Unable to plot, histogram is all-zero.'
             return
         if scale_by_widths:
+            #scale flux by bin width /MeV
             data = empty_like(hist.data)
             data[:] = hist.data
-            data[:, 4] /= data[:, 3] - data[:, 2]
+            data[:, 4] /= data[:, 1] - data[:, 0]
         else:
             data = hist.data
         histdat = []
