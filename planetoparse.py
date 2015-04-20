@@ -264,7 +264,8 @@ class histdata:
         macrofile.close()
         return
             
-    def save_as_2d_gps(self, filename, shape = '', thetalimits = None):
+    def save_as_2d_gps(self, filename, shape = '', thetalimits = None,
+                       thetaoffset = 0., thetamultiplier = 1.):
         """Saves the histogram information in a set of Geant4 GPS gun
         commands that will recreate this spectrum. Only really works
         with Ekin vs cos theta histograms."""
@@ -302,18 +303,21 @@ class histdata:
             source_intensity = intensity * flux / total_flux
             if not source_intensity == 0.:
                 string = self.__gen_1d_gps(data, shape, source_intensity, 
-                                           thetalimits = thetalimits)
+                                           thetalimits = thetalimits,
+                                           thetaoffset = thetaoffset,
+                                           thetamultiplier = thetamultiplier)
                 macrofile.write(string)
                 macrofile.write('\n')
         macrofile.close()
         return
         
-    def __gen_1d_gps(self, hist, shape, intensity, thetalimits):
+    def __gen_1d_gps(self, hist, shape, intensity, thetalimits, thetaoffset,
+                     thetamultiplier):
         """Generates a representation of the histogram data as a 1D Geant4
         GPS gun command sequence."""
         #make data copy
         data = empty_like(hist)
-        data[:] = hist            
+        data[:] = hist
         res = ''
         res += '/gps/source/add ' + str(intensity) + '\n'
         res += '/gps/particle ' + self.particle + '\n'
@@ -340,12 +344,15 @@ class histdata:
         data[:, 2] = arccos(data[:, 2]) - pi/2
         data[:, 3] = arccos(data[:, 3]) - pi/2
         data = data[data[:, 3].argsort()]
-        #first point:
-        res += '/gps/hist/point ' + str(data[0, 3]) + '\n'
-        for i in arange(0, len(data)):
-            res += '/gps/hist/point ' + str(data[i, 2]) + ' ' +\
-                str(data[i, 4] / (ehigh - elow)) + '\n'
-        return res
+        if not (data[:, 4] == 0.).all():
+            #first point:
+            res += '/gps/hist/point ' + str(data[0, 2]*thetamultiplier + thetaoffset) + '\n'
+            for i in arange(0, len(data)):
+                res += '/gps/hist/point ' + str(data[i, 3]*thetamultiplier + thetaoffset) + ' ' +\
+                    str(data[i, 4] / (ehigh - elow)) + '\n'
+            return res
+        else:
+            return ''
 
 ####################
 #planetoparse class definition
@@ -757,7 +764,7 @@ class planetoparse:
         savetxt(outfile, hist.data)
         return        
         
-    def save_ascii(self, filename, gzip_flag = True):
+    def save_ascii(self, filename, gzip_flag = False):
         """Save the contained Planetocosmics result information into an 
         (gziped) ASCII file for later use."""
         import gzip
