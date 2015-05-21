@@ -228,7 +228,11 @@ class histdata:
             self.particle + '\n')
         macrofile.write('/gps/source/add ' +\
             str(self.params['normalisation_factor']) + '\n')
-        macrofile.write('/gps/particle ' + self.particle + '\n')
+        if 'primary' in self.particle:
+            partname = self.particle.split(' ')[1]
+        else:
+            partname = self.particle
+        macrofile.write('/gps/particle ' + partname + '\n')
         #shape config:
         if not shape == '':
             if shape == 'RAD_above':
