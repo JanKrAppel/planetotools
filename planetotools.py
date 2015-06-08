@@ -802,15 +802,19 @@ def integrate_fluxhist(histogram, limits = None):
     (Emin, Emax) as second argument to set the integration range."""
     if isinstance(histogram, histdata):
         if not limits is None:
-            mask = (histogram.data[:, 0] >= limits[0]) * \
-                (histogram.data[:, 1] <= limits[1])
+            lims_min = amin(limits)
+            lims_max = amax(limits)
+            mask = (histogram.data[:, 0] >= lims_min) * \
+                (histogram.data[:, 1] <= lims_max)
         else:
             mask = ones(len(histogram.data), dtype = bool)
         return sum(histogram.data[:, 3][mask])
     elif type(histogram) == dict:
         if not limits is None:
-            mask = (histogram['x'] >= limits[0]) * \
-                (histogram['x'] <= limits[1])
+            lims_min = amin(limits)
+            lims_max = amax(limits)
+            mask = (histogram['x'] >= lims_min) * \
+                (histogram['x'] <= lims_max)
         else:
             mask = ones(len(histogram['x']), dtype = bool)
         return sum(histogram['y'][mask])
@@ -820,13 +824,17 @@ def integrate_2d_fluxhist(histogram, xlimits = None, ylimits = None):
     (Emin, Emax) as xlimits or ylimits keyword arguments to set the 
     integration range."""
     if not xlimits is None:
-        xmask = (histogram.data[:, 0] >= xlimits[0]) * \
-            (histogram.data[:, 1] <= xlimits[1])
+        xlims_min = amin(xlimits)
+        xlims_max = amax(xlimits)
+        xmask = (histogram.data[:, 0] >= xlims_min) * \
+            (histogram.data[:, 1] <= xlims_max)
     else:
         xmask = ones(len(histogram.data), dtype = bool)
     if not ylimits is None:
-        ymask = (histogram.data[:, 2] >= ylimits[0]) * \
-            (histogram.data[:, 3] <= ylimits[1])
+        ylims_min = amin(ylimits)
+        ylims_max = amax(ylimits)
+        ymask = (histogram.data[:, 2] >= ylims_min) * \
+            (histogram.data[:, 3] <= ylims_max)
     else:
         ymask = ones(len(histogram.data), dtype = bool)
     mask = xmask * ymask
@@ -843,13 +851,17 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
         return
     #apply selected limits
     if not xlimits is None:
-        xmask = (histogram.data[:, 0] >= xlimits[0]) * \
-            (histogram.data[:, 1] <= xlimits[1])
+        xlims_min = amin(xlimits)
+        xlims_max = amax(xlimits)
+        xmask = (histogram.data[:, 0] >= xlims_min) * \
+            (histogram.data[:, 1] <= xlims_max)
     else:
         xmask = ones(len(histogram.data), dtype = bool)
     if not ylimits is None:
-        ymask = (histogram.data[:, 2] >= ylimits[0]) * \
-            (histogram.data[:, 3] <= ylimits[1])
+        ylims_min = amin(ylimits)
+        ylims_max = amax(ylimits)
+        ymask = (histogram.data[:, 2] >= ylims_min) * \
+            (histogram.data[:, 3] <= ylims_max)
     else:
         ymask = ones(len(histogram.data), dtype = bool)
     mask = xmask * ymask
