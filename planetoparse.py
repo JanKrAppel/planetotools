@@ -263,8 +263,7 @@ class histdata:
         macrofile.write('/gps/hist/point ' + str(self.data[0, 0]) + '\n')
         for i in arange(0, len(self.data)):
             macrofile.write('/gps/hist/point ' + str(self.data[i, 1]) +\
-                ' ' + str(self.data[i, 3] / \
-                (self.data[i, 1] - self.data[i, 0])) + '\n')
+                ' ' + str(self.data[i, 3]) + '\n')
         macrofile.close()
         return
             
@@ -296,14 +295,12 @@ class histdata:
         #compute source intensity:
         intensity = self.params['normalisation_factor']
         mask = (self.data[:, 2] < 0.) * (self.data[:, 3] < 0.)        
-        total_flux = sum(self.data[:, 4][mask] / \
-            (self.data[:, 1][mask] - self.data[:, 0][mask]))
+        total_flux = sum(self.data[:, 4][mask])
         #write source definition
         for i in arange(0, len(self.data), num_ebins):
             data = self.data[i:i + num_ebins]
             mask = (data[:, 2] < 0.) * (data[:, 3] < 0.)
-            flux = sum(data[:, 4][mask] / (data[:, 1][mask] -\
-                data[:, 0][mask]))
+            flux = sum(data[:, 4][mask])
             source_intensity = intensity * flux / total_flux
             if not source_intensity == 0.:
                 string = self.__gen_1d_gps(data, shape, source_intensity, 
@@ -335,25 +332,31 @@ class histdata:
         res += '/gps/hist/point ' + str(ehigh) + ' 1.\n'
         res += '/gps/ang/type user\n'
         res += '/gps/hist/type theta\n'
+        res += '/gps/hist/point 0.\n'
+        res += '/gps/hist/point ' + str(2*pi) + ' 1.\n'
+        res += '/gps/hist/type theta\n'
         #prepare the data array:
         mask = ones(len(data[:,0]), dtype = bool)
         if not thetalimits is None:
-            thetalimits = cos(array(thetalimits) + pi/2)
+            thetalimits = cos(array(thetalimits))
             costhetamin = amin(thetalimits)
             costhetamax = amax(thetalimits)
             thetamasklower = (data[:, 2] > costhetamin) * (data[:, 2] < costhetamax)
             thetamaskupper = (data[:, 3] > costhetamin) * (data[:, 3] < costhetamax)
             mask = mask * thetamasklower * thetamaskupper
         data = data[mask]
-        data[:, 2] = arccos(data[:, 2]) - pi/2
-        data[:, 3] = arccos(data[:, 3]) - pi/2
+        data[:, 2] = arccos(data[:, 2]*thetamultiplier + thetaoffset)
+        data[:, 3] = arccos(data[:, 3]*thetamultiplier + thetaoffset)
+        #If upper angle bin < lower angle bin, swap the two columns:
+        if (data[:,3] < data[:,2]).any():
+            data = data.T[[0, 1, 3, 2, 4, 5]].T
         data = data[data[:, 3].argsort()]
         if not (data[:, 4] == 0.).all():
             #first point:
-            res += '/gps/hist/point ' + str(data[0, 2]*thetamultiplier + thetaoffset) + '\n'
+            res += '/gps/hist/point ' + str(data[0, 2]) + '\n'
             for i in arange(0, len(data)):
-                res += '/gps/hist/point ' + str(data[i, 3]*thetamultiplier + thetaoffset) + ' ' +\
-                    str(data[i, 4] / (ehigh - elow)) + '\n'
+                res += '/gps/hist/point ' + str(data[i, 3]) + ' ' +\
+                    str(data[i, 4]) + '\n'
             return res
         else:
             return ''
