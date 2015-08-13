@@ -331,7 +331,7 @@ class histdata:
         res += '/gps/hist/point ' + str(elow) + '\n'
         res += '/gps/hist/point ' + str(ehigh) + ' 1.\n'
         res += '/gps/ang/type user\n'
-        res += '/gps/hist/type theta\n'
+        res += '/gps/hist/type phi\n'
         res += '/gps/hist/point 0.\n'
         res += '/gps/hist/point ' + str(2*pi) + ' 1.\n'
         res += '/gps/hist/type theta\n'
