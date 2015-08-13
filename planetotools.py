@@ -181,7 +181,7 @@ if plotting_available:
 if plotting_available:
     def plot_1d_hist(hist, scale_by = 1., label_detector = False, 
                      scale_by_width = True, xlims = (-inf, inf), 
-                     energy_scale = None, *args, **kwargs):
+                     energy_scale = None, errorbars = True, *args, **kwargs):
         """Plots 1D histograms. Pass the histogram as available through 
         planetoparse to plot, additional arguments are passed to the Matplotlib 
         plotting function (errorbar)."""
@@ -221,10 +221,14 @@ if plotting_available:
                 bin_width = ones(len(bin_width))
         else:
             bin_width = ones(len(data))
-        plt.errorbar(data[:, 2], data[:, 3] * scale_by / bin_width,
-                     xerr = bin_width / 2, 
-                     yerr = data[:, 4] * scale_by / bin_width, marker='.',
-                     label = label, capsize = capsize, *args, **kwargs)
+        if errorbars:
+            plt.errorbar(data[:, 2], data[:, 3] * scale_by / bin_width,
+                         xerr = bin_width / 2, 
+                         yerr = data[:, 4] * scale_by / bin_width, marker='.',
+                         label = label, capsize = capsize, *args, **kwargs)
+        else:
+            plt.plot(data[:, 2], data[:, 3] * scale_by / bin_width,
+                     label = label, *args, **kwargs)            
         title, units = __parse_title(params['Title'])
         plt.title(title)
         xlabel, xunits = __parse_title(params['Xaxis'])
