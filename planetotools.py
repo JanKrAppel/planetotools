@@ -694,10 +694,12 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             from scipy.interpolate import interp1d
             interpolator = interp1d(hist2.data[:, 2], hist2.data[:, 3],
                                     bounds_error = False, fill_value = 0.)
+            error_interpolator = interp1d(hist2.data[:, 2], hist2.data[:, 4],
+                                          bounds_error = False, fill_value = 0.)
             res.data[:, 3] += interpolator(res.data[:, 2])
             res.data[:, 3] /= scale_by
             res.data[:, 4] = sqrt(res.data [:, 4]**2 + 
-                                  interpolator(res.data[:, 2])**2)
+                                  error_interpolator(res.data[:, 2])**2)
             return res            
         xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
         yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
@@ -731,10 +733,13 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
                                     hist2.data[:, 4], bounds_error = False, 
                                     fill_value = 0.)
+            error_interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
+                                          hist2.data[:, 5], bounds_error = False, 
+                                          fill_value = 0.)
             res.data[:, 4] += interpolator(res.data[:, 1], res.data[:, 3])
             res.data[:, 4] /= scale_by
-            res.data[:, 4] = sqrt(res.data [:, 4]**2 + 
-                                  interpolator(res.data[:, 1], 
+            res.data[:, 4] = sqrt(res.data [:, 5]**2 + 
+                                  error_interpolator(res.data[:, 1], 
                                                res.data[:, 3])**2)
             return res            
         xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
