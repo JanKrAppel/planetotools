@@ -946,7 +946,7 @@ class planetoparse:
 
     def __combine_highz_flux(self, flux_list, verbosity = 0):
         """Combines high-Z flux histograms into one for each element."""
-        from planetotools import __combine_single_hists
+        from . import planetotools as pt
         elements = self.__get_highz_element_list(flux_list)
         if verbosity > 0:
             if len(elements) > 0:
@@ -991,7 +991,7 @@ class planetoparse:
                                                               isotope)]\
                                                                   [detector]
                     hist.scale_per_nuc(float64(isotope))
-                    res = __combine_single_hists(res, hist)
+                    res = pt.__combine_single_hists(res, hist)
                 #add the result into the flux list:
                 if not element in flux_list:
                     flux_list[element] = {}
