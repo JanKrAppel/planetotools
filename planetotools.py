@@ -699,7 +699,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             res.data[:, 3] += interpolator(res.data[:, 2])
             res.data[:, 3] /= scale_by
             res.data[:, 4] = sqrt(res.data [:, 4]**2 + 
-                                  error_interpolator(res.data[:, 2])**2)
+                                  error_interpolator(res.data[:, 2])**2)/scale_by
             return res            
         xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
         yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
@@ -710,7 +710,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             return hist1
         res.data[:, 3] += hist2.data[:, 3]
         res.data[:, 3] /= scale_by
-        res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)
+        res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)/scale_by
         return res
     elif hist1.type == hist2.type == 'Histogram2D':
         res = histdata(copyhist = hist1)
@@ -738,9 +738,9 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
                                           fill_value = 0.)
             res.data[:, 4] += interpolator(res.data[:, 1], res.data[:, 3])
             res.data[:, 4] /= scale_by
-            res.data[:, 4] = sqrt(res.data [:, 5]**2 + 
+            res.data[:, 5] = sqrt(res.data [:, 5]**2 + 
                                   error_interpolator(res.data[:, 1], 
-                                               res.data[:, 3])**2)
+                                               res.data[:, 3])**2)/scale_by
             return res            
         xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
         yunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
@@ -754,7 +754,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             return hist1
         res.data[:, 4] += hist2.data[:, 4]
         res.data[:, 4] /= scale_by
-        res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)
+        res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)/scale_by
         return res
         
 def add_histograms(hists, scale_by = 1.):
