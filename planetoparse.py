@@ -946,6 +946,7 @@ class planetoparse:
 
     def __combine_highz_flux(self, flux_list, verbosity = 0):
         """Combines high-Z flux histograms into one for each element."""
+        from planetotools import __combine_single_hists
         elements = self.__get_highz_element_list(flux_list)
         if verbosity > 0:
             if len(elements) > 0:
@@ -990,7 +991,7 @@ class planetoparse:
                                                               isotope)]\
                                                                   [detector]
                     hist.scale_per_nuc(float64(isotope))
-                    res = self.__combine_single_hists(res, hist)
+                    res = __combine_single_hists(res, hist)
                 #add the result into the flux list:
                 if not element in flux_list:
                     flux_list[element] = {}
@@ -1016,23 +1017,7 @@ class planetoparse:
                 if not detector in tmp:
                     res.remove(detector)
         return res
-        
-    def __combine_single_hists(self, hist1, hist2):
-        """Combines two single histograms."""
-        if not len(hist1.data) == len(hist2.data):
-            print 'ERROR: Unable to combine histograms, different length.'
-            return hist1
-        res = histdata(copyhist = hist1)
-        #hist is the interpolated histogram to add:
-        hist = 10**interp(res.data[:, 2], hist2.data[:, 2], 
-                          log10(hist2.data[:, 3]))
-        #remove the nan values:
-        hist[isnan(hist)] = 0.
-        #add everything up:
-        res.data[:, 3] += hist
-        res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)
-        return res
-        
+                
     def print_nonempty_highz(self):
         """Print a list of high-Z histograms that are not empty."""
         downlist, downcount = self.__get_nonempty_highz_string(
