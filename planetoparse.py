@@ -946,7 +946,6 @@ class planetoparse:
 
     def __combine_highz_flux(self, flux_list, verbosity = 0):
         """Combines high-Z flux histograms into one for each element."""
-        from . import planetotools as pt
         elements = self.__get_highz_element_list(flux_list)
         if verbosity > 0:
             if len(elements) > 0:
@@ -991,13 +990,60 @@ class planetoparse:
                                                               isotope)]\
                                                                   [detector]
                     hist.scale_per_nuc(float64(isotope))
-                    res = pt.__combine_single_hists(res, hist)
+                    res = self.__combine_single_hists(res, hist)
                 #add the result into the flux list:
                 if not element in flux_list:
                     flux_list[element] = {}
                 flux_list[element][detector] = res
         return
         
+    def __combine_single_hists(hist1, hist2, scale_by = 1.):
+        """Combine two histograms into one."""
+        if not hist1.type == hist2.type:
+            return hist1
+        elif hist1.type == hist2.type == 'Histogram1D':
+            res = histdata(copyhist = hist1)
+            if not (res.data[:, 0] == hist2.data[:, 0]).all() or not \
+                (res.data[:, 1] == hist2.data[:, 1]).all() or not \
+                (res.data[:, 2] == hist2.data[:, 2]).all():
+                from scipy.interpolate import interp1d
+                interpolator = interp1d(hist2.data[:, 2], hist2.data[:, 3],
+                                        bounds_error = False, fill_value = 0.)
+                error_interpolator = interp1d(hist2.data[:, 2], hist2.data[:, 4],
+                                              bounds_error = False, fill_value = 0.)
+                res.data[:, 3] += interpolator(res.data[:, 2])
+                res.data[:, 3] /= scale_by
+                res.data[:, 4] = sqrt(res.data [:, 4]**2 + 
+                                      error_interpolator(res.data[:, 2])**2)/scale_by
+                return res            
+            res.data[:, 3] += hist2.data[:, 3]
+            res.data[:, 3] /= scale_by
+            res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)/scale_by
+            return res
+        elif hist1.type == hist2.type == 'Histogram2D':
+            res = histdata(copyhist = hist1)
+            if not (res.data[:, 0] == hist2.data[:, 0]).all() or not \
+                (res.data[:, 1] == hist2.data[:, 1]).all() or not \
+                (res.data[:, 2] == hist2.data[:, 2]).all() or not \
+                (res.data[:, 3] == hist2.data[:, 3]).all():
+                from scipy.interpolate import interp1d
+                interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
+                                        hist2.data[:, 4], bounds_error = False, 
+                                        fill_value = 0.)
+                error_interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
+                                              hist2.data[:, 5], bounds_error = False, 
+                                              fill_value = 0.)
+                res.data[:, 4] += interpolator(res.data[:, 1], res.data[:, 3])
+                res.data[:, 4] /= scale_by
+                res.data[:, 5] = sqrt(res.data [:, 5]**2 + 
+                                      error_interpolator(res.data[:, 1], 
+                                                   res.data[:, 3])**2)/scale_by
+                return res            
+            res.data[:, 4] += hist2.data[:, 4]
+            res.data[:, 4] /= scale_by
+            res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)/scale_by
+            return res
+
     def __get_particle_name(self, element, isotope, regex = False):
         """Returns the Geant4 particle name for a given element and isotope."""
         if not regex:
