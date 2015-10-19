@@ -997,7 +997,7 @@ class planetoparse:
                 flux_list[element][detector] = res
         return
         
-    def __combine_single_hists(hist1, hist2, scale_by = 1.):
+    def __combine_single_hists(self, hist1, hist2, scale_by = 1.):
         """Combine two histograms into one."""
         if not hist1.type == hist2.type:
             return hist1
