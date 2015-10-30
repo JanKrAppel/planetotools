@@ -162,18 +162,67 @@ class histdata:
             
     def save_data(self, filename):
         """Save only the data array to disk."""
-        titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Title'])
-        if not titleparse is None:
-            yunits = titleparse.group(2)
-        else:
-            yunits = ''
-        titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
-        if not titleparse is None:
-            xunits = titleparse.group(2)
-        else:
-            xunits = ''
-        with open(filename, 'w') as outfile:
-            savetxt(outfile, self.data)
+        header_1d = '# bin_left {xlabel:s} / {xunits:s}\t' +\
+                    'bin_right {xlabel:s} / {xunits:s}\t' +\
+                    'bin_center {xlabel:s} / {xunits:s}\t' +\
+                    '{ylabel:s} / {yunits:s}\t' +\
+                    'Error of {ylabel:s} / {yunits:s}\t\n'
+        header_2d = '# bin_left {xlabel:s} / {xunits:s}\t' +\
+                    'bin_right {xlabel:s} / {xunits:s}\t' +\
+                    'bin_left {ylabel:s} / {yunits:s}\t' +\
+                    'bin_right {ylabel:s} / {yunits:s}\t' +\
+                    '{zlabel:s}\t' +\
+                    'Error of {zlabel:s}\n'
+        if self.type == 'Histogram1D':
+            header = header_1d
+            titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Title'])
+            if not titleparse is None:
+                yunits = titleparse.group(2)
+                ylabel = re.sub(' vs.*', '', titleparse.group(1))
+            else:
+                yunits = ''
+                ylabel = self.params['Title']
+            titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+            if not titleparse is None:
+                xunits = titleparse.group(2)
+                xlabel = titleparse.group(1)
+            else:
+                xunits = ''
+                xlabel = self.params['Xaxis']
+            with open(filename, 'w') as outfile:
+                outfile.write(header.format(xlabel=xlabel,
+                                            ylabel=ylabel,
+                                            xunits=xunits,
+                                            yunits=yunits))
+                savetxt(outfile, self.data)
+        if self.type == 'Histogram2D':
+            header = header_2d
+            titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Yaxis'])
+            if not titleparse is None:
+                yunits = titleparse.group(2)
+                ylabel = titleparse.group(1)
+            else:
+                yunits = ''
+                ylabel = self.params['Yaxis']
+            titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Title'])
+            if not titleparse is None:
+                zlabel = titleparse.group(2)
+            else:
+                zlabel = ''
+            titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+            if not titleparse is None:
+                xunits = titleparse.group(2)
+                xlabel = titleparse.group(1)
+            else:
+                xunits = ''
+                xlabel = self.params['Xaxis']
+            with open(filename, 'w') as outfile:
+                outfile.write(header.format(xlabel=xlabel,
+                                            ylabel=ylabel,
+                                            zlabel=zlabel,
+                                            xunits=xunits,
+                                            yunits=yunits))
+                savetxt(outfile, self.data)
         return
             
     def __parse_params(self, line):
