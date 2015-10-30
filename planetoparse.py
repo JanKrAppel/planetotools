@@ -85,14 +85,17 @@ class histdata:
                         
     def scale_per_sterad(self):
         """Scale histogram to Energy/sr."""
-        if not self.scaled_per_sterad:
-            self.data[:, 3] /= 2*pi
-            self.data[:, 4] /= 2*pi
-            titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
-            self.params['Xaxis'] = \
-                titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
-            self.scaled_per_sterad = True
-            return True
+        if not self.params['Xaxis'] == 'cos_theta':
+            if not self.scaled_per_sterad:
+                self.data[:, 3] /= 2*pi
+                self.data[:, 4] /= 2*pi
+                titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+                self.params['Xaxis'] = \
+                    titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
+                self.scaled_per_sterad = True
+                return True
+            else:
+                return False
         else:
             return False
             
