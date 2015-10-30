@@ -63,7 +63,6 @@ class histdata:
             if not weight is None:
                 self.nuc_weight = weight
             self.data[:, :3] /= self.nuc_weight
-            self.data[:, 3:] *= self.nuc_weight
             titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
             self.params['Xaxis'] = \
                 titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
@@ -76,7 +75,6 @@ class histdata:
         """Remove energy scaling per nucleon from histogram."""
         if self.scaled_per_nuc:
             self.data[:, :3] *= self.nuc_weight
-            self.data[:, 3:] /= self.nuc_weight
             self.params['Xaxis'] = re.sub('/nuc', '', self.params['Xaxis'])
             self.scaled_per_nuc = False
             return True
@@ -1000,7 +998,7 @@ class planetoparse:
                 flux_list[element][detector] = res
         return
         
-    def __combine_single_hists(hist1, hist2, scale_by = 1.):
+    def __combine_single_hists(self, hist1, hist2, scale_by = 1.):
         """Combine two histograms into one."""
         if not hist1.type == hist2.type:
             return hist1
