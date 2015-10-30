@@ -89,8 +89,8 @@ class histdata:
             if not self.scaled_per_sterad:
                 self.data[:, 3] /= 2*pi
                 self.data[:, 4] /= 2*pi
-                titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
-                self.params['Xaxis'] = \
+                titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Title'])
+                self.params['Title'] = \
                     titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
                 self.scaled_per_sterad = True
                 return True
@@ -104,7 +104,7 @@ class histdata:
         if self.scaled_per_sterad:
             self.data[:, 3] *= 2*pi
             self.data[:, 4] *= 2*pi
-            self.params['Xaxis'] = re.sub('/sr', '', self.params['Xaxis'])
+            self.params['Title'] = re.sub('/sr', '', self.params['Title'])
             self.scaled_per_sterad = False
             return True
         else:
@@ -162,7 +162,18 @@ class histdata:
             
     def save_data(self, filename):
         """Save only the data array to disk."""
-        savetxt(filename, self.data)
+        titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Title'])
+        if not titleparse is None:
+            yunits = titleparse.group(2)
+        else:
+            yunits = ''
+        titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
+        if not titleparse is None:
+            xunits = titleparse.group(2)
+        else:
+            xunits = ''
+        with open(filename, 'w') as outfile:
+            savetxt(outfile, self.data)
         return
             
     def __parse_params(self, line):
