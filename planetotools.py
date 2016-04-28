@@ -961,3 +961,10 @@ def project_data(histogram, axis = 'x', xlimits = None, ylimits = None):
     res.type = 'Histogram1D'
     return res
 
+def enumerate_hist_list(list):
+    """Print list index, particle type and detector for a given list of 
+    histograms."""
+    for i in xrange(0, len(list)):
+        print '{i:3d}: det. {det:2d} {part:s}'.format(i=i, 
+                                                      part=list[i].particle, 
+                                                      det=list[i].detector)
