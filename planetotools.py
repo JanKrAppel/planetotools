@@ -151,7 +151,7 @@ def convert_edep_to_LET(profile, atmodata):
     return res
 
 if plotting_available:
-    def plot_edep_profile(hist, *args, **kwargs):
+    def plot_edep_profile(hist, errorbars=True, *args, **kwargs):
         """Plots energy deposition profiles. Pass the profile as available 
         through planetoparse to plot, additional arguments are passed to the 
         Matplotlib plotting function (errorbar)."""
@@ -164,9 +164,13 @@ if plotting_available:
             capsize = kwargs['capsize']
             kwargs.pop('capsize')
         bin_width = hist.data[:, 1] - hist.data[:, 0]
-        plt.errorbar(hist.data[:, 3] / bin_width, hist.data[:, 2], 
-                     xerr = hist.data[:,4] / bin_width, marker='.', 
-                     capsize = capsize, *args, **kwargs)
+        if errorbars:
+            plt.errorbar(hist.data[:, 3] / bin_width, hist.data[:, 2], 
+                         xerr = hist.data[:,4] / bin_width, marker='.', 
+                         capsize = capsize, *args, **kwargs)
+        else:
+            plt.plot(hist.data[:, 3] / bin_width, hist.data[:, 2], marker='.', 
+                     *args, **kwargs)
         title, xunits = __parse_title(hist.params['Title'])
         ylabel, yunits = __parse_title(hist.params['Xaxis'])
         __check_xy_units(xunits, yunits)
