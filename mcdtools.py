@@ -46,7 +46,7 @@ def plot_dens_profile(mcddata, title=True, *args, **kwargs):
     plt.show(block = False)
     return
 
-def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, title=True, *args, **kwargs):
+def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, title=True, label_suffix='', *args, **kwargs):
     """Plot a composition profile for the given MCD data object."""
     if 'label' in kwargs:
         kwargs.pop('label')
@@ -59,7 +59,7 @@ def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, title=True, *
             if component in components:
                 components.remove(component)
     for component in components:
-        plt.plot(mcddata.data['comp'][component], mcddata.data['xz'], label = component, *args, **kwargs)
+        plt.plot(mcddata.data['comp'][component], mcddata.data['xz'], label = component + label_suffix, *args, **kwargs)
     plt.legend(loc = 'best')
     __check_xy_units('Volume mixing ratio', 'km')
     plt.xlabel('Volume mixing ratio')
@@ -71,6 +71,29 @@ def plot_comp_profile(mcddata, plot_only = None, dont_plot = None, title=True, *
     plt.show(block = False)
     return
     
+def plot_comp_ratios_profile(mcddata1, mcddata2, plot_only = None, dont_plot = None, label_suffix='', *args, **kwargs):
+    """Plot a composition profile for the given MCD data object."""
+    if 'label' in kwargs:
+        kwargs.pop('label')
+    if not plot_only is None:
+        components = plot_only
+    else:
+        components = mcddata1.data['comp'].keys()
+    if not dont_plot is None:
+        for component in dont_plot:
+            if component in components:
+                components.remove(component)
+    for component in components:
+        plt.plot(mcddata1.data['comp'][component]/mcddata2.data['comp'][component], mcddata1.data['xz'], label = component + label_suffix, *args, **kwargs)
+    plt.legend(loc = 'best')
+    __check_xy_units('Volume mixing ratio', 'km')
+    plt.xlabel('Volume mixing ratio')
+    plt.ylabel('Height / km')
+    plt.xscale('log')
+    plt.ylim(mcddata1.params['surface_height'], mcddata1.params['max_height'])
+    plt.show(block = False)
+    return
+
 def plot_shield_depth_profile(mcddata, title=True, *args, **kwargs):
     """Plot a shielding depth profile for the given MCD data object."""
     plt.plot(mcddata.data['shield_depth'], mcddata.data['xz'], *args, **kwargs)

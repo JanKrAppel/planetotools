@@ -754,6 +754,10 @@ class planetoparse:
             else:
                 self.hists1d.append(res)
         elif title[1] == 'EDEP':
+            #do postprocessing here to get rid of rad/s in favour of Gy/s
+            res.data[:,3:] *= .01
+            res.params['Title'] = re.sub('\[rad/s\]', '[Gy/s]',
+                                         res.params['Title'])
             self.edep_atmo.append(res)
         elif title[1] == 'SOIL_EDEP':
             self.edep_soil.append(res)
