@@ -396,6 +396,7 @@ class atmoparse:
 
     def __call__(self, height):
         """Return a dictionary with the interpolated atmosphere values at the requested height."""
+        from numpy import interp
         datafields = self.data.keys()
         datafields.remove('xz')
         res = {}
