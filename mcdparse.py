@@ -67,13 +67,12 @@ class mcdparse:
         return
         
     def __build_shield_depth(self):
-        #FIXME: Currently broken, off by factor of 100
         res = []
         for i in arange(0, len(self.data['xz']), 1):
             if i == 0:
                 res.append(float64(0.))
             else:
-                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e2
+                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e4
                 res.append((self.data['dens'][i] * dh))
         self.data['shield_depth'] = array(res, dtype = float64)
         return
@@ -243,13 +242,12 @@ class atmoparse:
         return
         
     def __build_shield_depth(self):
-        #FIXME: Currently broken, off by factor of 100
         res = []
         for i in arange(0, len(self.data['xz']), 1):
             if i == 0:
                 res.append(float64(0.))
             else:
-                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e2
+                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e4
                 res.append((self.data['dens'][i] * dh))
         self.data['shield_depth'] = array(res, dtype = float64)
         return
