@@ -445,6 +445,7 @@ class planetoparse:
         self.flux_angular = {}
         self.edep_soil = []
         self.edep_atmo = []
+        self.edep_ionization = []
         self.primhists = {}
         self.flux2d_up = {}
         self.flux2d_down = {}
@@ -1158,3 +1159,42 @@ class planetoparse:
                     count += 1
         return res[:-1], count
 
+    def compute_ionization_profiles(self, atmo, W=35.):
+        """Compute ionization profiles in the atmosphere. atmo must be either
+        mcdtools.mcdparse or mcdtools.atmotools instance. W is the energy per
+        ion pair production in eV."""
+        for hist in self.edep_atmo:
+            reshist = histdata(copyhist = hist)
+            reshist.data = None
+            if not self.__parse_title(hist.params['Xaxis'])[1] == 'km':
+                depth_hist = True
+                def __depth2alt(depth):
+                    from numpy import interp
+                    return interp(depth, atmo.data['shield_depth'], atmo.data['xz'])
+                reshist.params['Title'] = 'Ionization rate vs depth [1/cm3/s]'
+            else:
+                depth_hist = False
+                reshist.params['Title'] = 'Ionization rate vs altitude [1/cm3/s]'
+            resdata = []
+            for row in hist.data:
+                if depth_hist:
+                    alt = __depth2alt(row[2])
+                else:
+                    alt = row[2]
+                dens = atmo(alt)['dens']
+                ionization = 6.24e15*row[3]*dens/W
+                ionization_error = 6.24e15*row[4]*dens/W
+                resrow = [row[0], row[1], row[2], ionization, ionization_error]
+                resdata.append(resrow)
+            reshist.data = array(resdata)
+            self.edep_ionization.append(reshist)
+        return                
+
+    def __parse_title(self, title):
+        """Parses plot title and unit information from planetoparse plot titles.
+        """
+        titleparse = re.match('(.*)\s*\[(.*)\]', title)
+        if titleparse is None:
+            return None, title
+        else:
+            return titleparse.group(1), titleparse.group(2)

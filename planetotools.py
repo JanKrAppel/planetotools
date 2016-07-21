@@ -122,34 +122,6 @@ class log_interpolator:
         return 10**interp(x, self.atmodata.data[self.field_x], 
                           log10(self.atmodata.data[self.field_y]))
 
-def convert_edep_to_LET(profile, atmodata):
-    """Convert a energy deposition profile in rad/s vs km to keV/um vs km.
-    Options needed are the deposition profile to convert and the atmodata/
-    mcddata atmosphere data used in the simulation run."""
-    res = histdata(copyhist = profile)
-    tmp, yunits = __parse_title(profile.params['Xaxis'])
-    if yunits == 'km':
-        x_field = 'xz'
-    elif yunits == 'g/cm2':
-        x_field = 'shield_depth'
-    else:
-        print 'ERROR: Unknown altitude scaling, aborting'
-        return None
-    interpolate = log_interpolator(atmodata, x_field, 'dens')
-    for line in res.data:
-        dens = interpolate(line[2])
-        line[3:] /= 1e3 #in J*cm**2/g
-        #convert to J/cm:
-        line[3:] *= dens
-        #convert to keV/cm:
-        line[3:] *= 6.241509e15
-        #convert to keV/um:
-        line[3:] /= 1e4
-    title, xunits = __parse_title(res.params['Title'])
-    title = re.sub('Deposited energy', 'LET', title)
-    res.params['Title'] = title + ' [keV/um]'
-    return res
-
 if plotting_available:
     def plot_edep_profile(hist, errorbars=True, *args, **kwargs):
         """Plots energy deposition profiles. Pass the profile as available 
@@ -671,6 +643,23 @@ def combine_histograms(hists, scale_by = 1.):
                 if not added:
                     res.edep_soil.append(histdata(
                         copyhist = addthis.edep_soil[i]))
+                    added = True
+            #combine atmo ionization hists
+            for i in arange(0, len(addthis.edep_ionization)):
+                added = False
+                for j in arange(0, len(res.edep_ionization)):
+                    addtitle = __parse_title(
+                        addthis.edep_ionization[i].params['Title'])[0]
+                    restitle = __parse_title(
+                        res.edep_ionization[j].params['Title'])[0]
+                    if addtitle == restitle:
+                        res.edep_ionization[j] = __combine_single_hists(
+                            res.edep_ionization[j], addthis.edep_ionization[i], 
+                            scale_by = scale_by)
+                        added = True
+                if not added:
+                    res.edep_ionization.append(histdata(
+                        copyhist = addthis.edep_ionization[i]))
                     added = True
         return res
     else:
