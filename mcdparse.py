@@ -72,8 +72,8 @@ class mcdparse:
             if i == 0:
                 res.append(float64(0.))
             else:
-                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e4
-                res.append((self.data['dens'][i] * dh))
+                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e5
+                res.append((self.data['dens'][i] * dh) + res[-1])
         self.data['shield_depth'] = array(res, dtype = float64)
         return
             
@@ -125,7 +125,7 @@ class mcdparse:
             xz_comp[comp] = dust_vol*self.params['dust_component_ratios'][comp]
         #set surface height and return values
         self.params['surface_height'] = extvar[3]/1e3
-        return (extvar[1]/1e3, temp, pres, dens, xz_comp)
+        return (extvar[1]/1e3, temp, pres, dens/1e3, xz_comp)
         
     def load_params(self, configfile):
         """Loads parameters from a config file."""
@@ -211,6 +211,7 @@ class mcdparse:
         
     def __call__(self, height):
         """Return a dictionary with the interpolated atmosphere values at the requested height."""
+        from scipy.interpolate import interp1d
         datafields = self.data.keys()
         datafields.remove('xz')
         res = {}
@@ -218,9 +219,11 @@ class mcdparse:
             if entry == 'comp':
                 res[entry] = {}
                 for element in self.data[entry]:
-                    res[entry][element] = interp(height, self.data['xz'], self.data[entry][element])    
+                    interpolator = interp1d(self.data['xz'], self.data[entry][element], bounds_error=False)
+                    res[entry][element] = float64(interpolator(height))
             else:
-                res[entry] = interp(height, self.data['xz'], self.data[entry])
+                interpolator = interp1d(self.data['xz'], self.data[entry], bounds_error=False)
+                res[entry] = float64(interpolator(height))
         return res
                  
 ####################
@@ -247,8 +250,8 @@ class atmoparse:
             if i == 0:
                 res.append(float64(0.))
             else:
-                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e4
-                res.append((self.data['dens'][i] * dh))
+                dh = (self.data['xz'][i - 1] - self.data['xz'][i])*1e5
+                res.append((self.data['dens'][i] * dh) + res[-1])
         self.data['shield_depth'] = array(res, dtype = float64)
         return
             
@@ -305,6 +308,11 @@ class atmoparse:
         ####################
         #read data section
         ####################
+        if self.params['mass_density_unit'] == 'kg/m3':
+            density_multiplier = 1e-3
+            self.params['mass_density_unit'] == 'g/cm3'
+        else:
+            density_multiplier = 1
         line = infile.readline()
         #get column mapping
         headers = line.split()
@@ -332,7 +340,7 @@ class atmoparse:
             dat_xz.append(values[value_map['xz']])
             dat_temp.append(values[value_map['temp']])
             dat_pres.append(values[value_map['pres']])
-            dat_dens.append(values[value_map['dens']])
+            dat_dens.append(values[value_map['dens']]*density_multiplier)
             for component in atmo_components:
                 dat_xz_comp[component].append(values[value_map[component]])
             line = infile.readline()[:-1]
@@ -394,7 +402,7 @@ class atmoparse:
 
     def __call__(self, height):
         """Return a dictionary with the interpolated atmosphere values at the requested height."""
-        from numpy import interp
+        from scipy.interpolate import interp1d
         datafields = self.data.keys()
         datafields.remove('xz')
         res = {}
@@ -402,8 +410,10 @@ class atmoparse:
             if entry == 'comp':
                 res[entry] = {}
                 for element in self.data[entry]:
-                    res[entry][element] = interp(height, self.data['xz'], self.data[entry][element])    
+                    interpolator = interp1d(self.data['xz'], self.data[entry][element], bounds_error=False)
+                    res[entry][element] = float64(interpolator(height))
             else:
-                res[entry] = interp(height, self.data['xz'], self.data[entry])
+                interpolator = interp1d(self.data['xz'], self.data[entry], bounds_error=False)
+                res[entry] = float64(interpolator(height))
         return res
-        
+       
