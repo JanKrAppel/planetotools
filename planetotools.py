@@ -961,3 +961,64 @@ def enumerate_hist_list(list):
         print '{i:3d}: det. {det:2d} {part:s}'.format(i=i, 
                                                       part=list[i].particle, 
                                                       det=list[i].detector)
+                                                      
+def hist2dose(hist, Z_target=3.33333, A_target=6., rho_target=1e3,
+              **kwargs):
+    """Compute dose rate from an energy spectrum. Defaults to dose in H2O."""
+    from bethebloch import bethebloch
+    from scipy.constants import eV, m_u
+    doserates = []
+    doserates_delta = []
+    for (E_low, E_high, E, flux, flux_delta) in hist.data:
+        E = E*eV #E in Joule
+        E_low = E_low*eV
+        E_high = E_high*eV
+        E_delta = (E_high - E_low)/2
+        flux = flux*1e4 #flux in 1/m^3/s
+        flux_delta = flux_delta*1e4
+        (Z_proj, A_proj) = __get_Z_A(hist.particle)
+        m = A_proj*m_u #m in kg
+        v_proj = sqrt(2*E/m) #V in m/s
+        v_proj_delta = sqrt(1/2/m/E_delta)
+        dEdx = bethebloch(v_proj, Z_proj, Z_target, A_target, rho_target,
+                          **kwargs) #dE/dx in J/m
+        doserates.append(flux*dEdx/rho_target)
+        #FIXME: At some point, we should compute the delta of the dose rate...
+    return sum(doserates)
+
+def __get_Z_A(part_name):
+    """Get particle Z and A from the Geant4 particle name"""
+    part_names = {'Ac227': (89, 227), 'Ag107': (47, 107), 'Al27': (13, 27),
+                  'Am243': (95, 243), 'Ar40': (18, 40), 'As75': (33, 75),
+                  'At210': (85, 210), 'Au197': (79, 197), 'B11': (5, 11),
+                  'Ba138': (56, 138), 'Be9': (4, 9), 'Bi209': (83, 209),
+                  'Br79': (35, 79), 'C12': (6, 12), 'Ca40': (20, 40),
+                  'Cd114': (48, 114), 'Ce140': (58, 140), 'Cl35': (17, 35),
+                  'Cm247': (96, 247), 'Co59': (27, 59), 'Cr52': (24, 52),
+                  'Cs133': (55, 133), 'Cu63': (29, 63), 'Dy164': (66, 164),
+                  'Er166': (68, 166), 'Eu153': (63, 153), 'F19': (9, 19),
+                  'Fe56': (26, 56), 'Fr223': (87, 223), 'Ga69': (31, 69),
+                  'Gd158': (64, 158), 'Ge74': (32, 74), 'Hf180': (72, 180),
+                  'Hg202': (80, 202), 'Ho165': (67, 165), 'I127': (53, 127),
+                  'In115': (49, 115), 'Ir193': (77, 193), 'K39': (19, 39),
+                  'Kr84': (36, 84), 'La139': (57, 139), 'Li7': (3, 7),
+                  'Lu175': (71, 175), 'Mg24': (12, 24), 'Mn55': (25, 55),
+                  'Mo98': (42, 98), 'N14': (7, 14), 'Na23': (11, 23),
+                  'Nb93': (41, 93), 'Nd144': (60, 144), 'Ne20': (10, 20),
+                  'Ni58': (28, 58), 'Np237': (93, 237), 'O16': (8, 16),
+                  'Os192': (76, 192), 'P31': (15, 31), 'Pa231': (91, 231),
+                  'Pb208': (82, 208), 'Pd106': (46, 106), 'Pm145': (61, 145),
+                  'Po209': (84, 209), 'Pr141': (59, 141), 'Pt195': (78, 195),
+                  'Pu244': (94, 244), 'Ra226': (88, 226), 'Rb58': (37, 58),
+                  'Re187': (75, 187), 'Rh103': (45, 103), 'Rn222': (86, 222),
+                  'Ru102': (44, 102), 'S32': (16, 32), 'Sb121': (51, 121),
+                  'Sc45': (21, 45), 'Se80': (34, 80), 'Si28': (14, 28), 
+                  'Sm152': (62, 152), 'Sn120': (50, 120), 'Sr88': (38, 88),
+                  'Ta181': (73, 181), 'Tb159': (65, 159), 'Tc98': (43, 98),
+                  'Te130': (52, 130), 'Th232': (90, 232), 'Ti48': (22, 48),
+                  'Tl205': (81, 205), 'Tm169': (69, 169), 'U238': (92, 238),
+                  'V51': (23, 51), 'W184': (74, 184), 'Xe132': (54, 132),
+                  'Y89': (39, 89), 'Yb174': (70, 174), 'Zn64': (30, 64),
+                  'Zr90': (40, 90), 'alpha': (2, 4), 'proton': (1, 1)}
+    part_name = part_name.replace('[0.0]', '')
+    return part_names[part_name]
