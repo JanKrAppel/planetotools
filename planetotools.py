@@ -963,31 +963,46 @@ def enumerate_hist_list(list):
                                                       det=list[i].detector)
                                                       
 def hist2dose(hist, Z_target=3.33333, A_target=6., rho_target=1e3,
-              **kwargs):
+              I=75., relativistic=True, **kwargs):
     """Compute dose rate from an energy spectrum. Defaults to dose in H2O."""
     from bethebloch import bethebloch
-    from scipy.constants import eV, m_u
+    from scipy.constants import eV, m_u, c
+    from numpy import isnan
     doserates = []
     doserates_delta = []
     for (E_low, E_high, E, flux, flux_delta) in hist.data:
-        E = E*eV #E in Joule
-        E_low = E_low*eV
-        E_high = E_high*eV
+        E = E*1e6*eV #E in Joule
+        E_low = E_low*1e6*eV
+        E_high = E_high*1e6*eV
         E_delta = (E_high - E_low)/2
-        flux = flux*1e4 #flux in 1/m^3/s
+        flux = flux*1e4 #flux in 1/m^2/s
         flux_delta = flux_delta*1e4
         (Z_proj, A_proj) = __get_Z_A(hist.particle)
         m = A_proj*m_u #m in kg
-        v_proj = sqrt(2*E/m) #V in m/s
-        v_proj_delta = sqrt(1/2/m/E_delta)
+        if not relativistic:
+            v_proj = sqrt(2*E/m) #V in m/s
+            v_proj_delta = sqrt(1/2/m/E_delta)
+        else:
+            if E < m*c**2:
+                E = 0.
+            v_proj = c*sqrt(1-m**2*c**4/(E - m*c**2)**2)
+            v_proj_delta = 0.
+        if isnan(v_proj):
+            print 'v is nan'
+            print '\tE =', E
+        if v_proj > c:
+            print 'v > c, constraining'
+            print '\tE =', E
+            v_proj = .99999*c
         dEdx = bethebloch(v_proj, Z_proj, Z_target, A_target, rho_target,
-                          **kwargs) #dE/dx in J/m
+                          I=I, **kwargs) #dE/dx in J/m
         doserates.append(flux*dEdx/rho_target)
         #FIXME: At some point, we should compute the delta of the dose rate...
     return sum(doserates)
 
 def __get_Z_A(part_name):
     """Get particle Z and A from the Geant4 particle name"""
+    from re import match
     part_names = {'Ac227': (89, 227), 'Ag107': (47, 107), 'Al27': (13, 27),
                   'Am243': (95, 243), 'Ar40': (18, 40), 'As75': (33, 75),
                   'At210': (85, 210), 'Au197': (79, 197), 'B11': (5, 11),
@@ -1019,6 +1034,19 @@ def __get_Z_A(part_name):
                   'Tl205': (81, 205), 'Tm169': (69, 169), 'U238': (92, 238),
                   'V51': (23, 51), 'W184': (74, 184), 'Xe132': (54, 132),
                   'Y89': (39, 89), 'Yb174': (70, 174), 'Zn64': (30, 64),
-                  'Zr90': (40, 90), 'alpha': (2, 4), 'proton': (1, 1)}
-    part_name = part_name.replace('[0.0]', '')
-    return part_names[part_name]
+                  'Zr90': (40, 90), 'alpha': (2, 4), 'proton': (1, 1),
+                  'e+': (1, 5.485e-4), 'e-': (-1, 5.485e-4), 
+                  'mu+': (1, 1.134e-1), 'mu-': (-1, 1.134e-1), 
+                  'pi+': (1, 1.498e-1), 'pi-': (-1, 1.498e-1)}
+    part_name = part_name.replace('[0.0]', '') #Fix stupid Geant4.9 naming
+    if not part_name in part_names:
+        #Try to find the element from combined high-Z isotope hists:
+        for name in part_names:
+            res = match('([A-Za-z]+)[0-9]+', name)
+            if not res is None:
+                if res.group(1) == part_name:
+                    return part_names[name]
+        #everything failed, return nan
+        return (nan, nan)
+    else:
+        return part_names[part_name]

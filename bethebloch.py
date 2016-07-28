@@ -84,7 +84,7 @@ def bethebloch(v, Z_proj, Z_target, A_target, rho, I = None, approx = 'power'):
         dE/dx for the given parameters in J/m
     """
     from scipy.constants import pi, c, epsilon_0, e, m_u, m_e
-    from numpy import log
+    from numpy import log, isnan
     if I is None:
         I = get_I(Z_target, approx = approx)
     beta = v/c
@@ -92,5 +92,9 @@ def bethebloch(v, Z_proj, Z_target, A_target, rho, I = None, approx = 'power'):
     dEdx = - 1.*(4*pi/(m_e*c**2))*(n*Z_proj**2/beta**2)*\
         ((e**2/(4*pi*epsilon_0))**2)*\
         (log(2*m_e*c**2*beta**2/(I*(1 - beta**2))) - beta**2)
-    return dEdx
-    
+    if isnan(dEdx) or dEdx < 0.:
+        print 'dEdx nan or < 0.'
+        print '\tbeta =', beta, 'v =', v
+        return 0.
+    else:
+        return dEdx
