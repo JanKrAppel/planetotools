@@ -1161,7 +1161,7 @@ class planetoparse:
 
     def compute_ionization_profiles(self, atmo, W=35.):
         """Compute ionization profiles in the atmosphere. atmo must be either
-        mcdtools.mcdparse or mcdtools.atmotools instance. W is the energy per
+        mcdtools.mcdparse or mcdtools.atmoparse instance. W is the energy per
         ion pair production in eV."""
         for hist in self.edep_atmo:
             reshist = histdata(copyhist = hist)
