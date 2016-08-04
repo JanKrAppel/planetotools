@@ -961,44 +961,94 @@ def enumerate_hist_list(list):
         print '{i:3d}: det. {det:2d} {part:s}'.format(i=i, 
                                                       part=list[i].particle, 
                                                       det=list[i].detector)
-                                                      
-def hist2dose(hist, Z_target=3.33333, A_target=6., rho_target=1e3,
-              I=75., relativistic=True, **kwargs):
-    """Compute dose rate from an energy spectrum. Defaults to dose in H2O."""
+
+def charged_hist2dose(hist, material='water', let_file = None, use_bb=False, 
+                      Z_target=3.33333, A_target=6., rho_target=1e3,
+                      I=75., relativistic=True, **kwargs):
+    """Compute dose rate from a charged particle energy spectrum. Tries to use
+    precomputed fluence-to-dEdx tables if available, if not, it defaults to 
+    using Bethe-Bloch for dEdx. Custom dEdx tables can be supplied to override
+    the default ones."""
     from bethebloch import bethebloch
     from scipy.constants import eV, m_u, c
-    from numpy import isnan
+    from numpy import isnan, loadtxt
+    from scipy.interpolate import interp1d
+    from os.path import dirname, join, exists
+    from inspect import getfile
+    import planetoparse #Trust me, this is needed.
     doserates = []
     doserates_delta = []
-    for (E_low, E_high, E, flux, flux_delta) in hist.data:
-        E = E*1e6*eV #E in Joule
-        E_low = E_low*1e6*eV
-        E_high = E_high*1e6*eV
-        E_delta = (E_high - E_low)/2
-        flux = flux*1e4 #flux in 1/m^2/s
-        flux_delta = flux_delta*1e4
-        (Z_proj, A_proj) = __get_Z_A(hist.particle)
-        m = A_proj*m_u #m in kg
-        if not relativistic:
-            v_proj = sqrt(2*E/m) #V in m/s
-            v_proj_delta = sqrt(1/2/m/E_delta)
+    if use_bb:
+        print 'Using Bethe- Bloch for LET data'
+        for (E_low, E_high, E, flux, flux_delta) in hist.data:
+            E = E*1e6*eV #E in Joule
+            E_low = E_low*1e6*eV
+            E_high = E_high*1e6*eV
+            E_delta = (E_high - E_low)/2
+            flux = flux*1e4 #flux in 1/m^2/s
+            flux_delta = flux_delta*1e4
+            (Z_proj, A_proj) = __get_Z_A(hist.particle)
+            m = A_proj*m_u #m in kg
+            if not relativistic:
+                v_proj = sqrt(2*E/m) #V in m/s
+                v_proj_delta = sqrt(1/2/m/E_delta)
+            else:
+                if E < m*c**2:
+                    E = 0.
+                v_proj = c*sqrt(1-m**2*c**4/(E - m*c**2)**2)
+                v_proj_delta = 0.
+            if isnan(v_proj):
+                print 'v is nan'
+                print '\tE =', E
+            if v_proj > c:
+                print 'v > c, constraining'
+                print '\tE =', E
+                v_proj = .99999*c
+            dEdx = bethebloch(v_proj, Z_proj, Z_target, A_target, rho_target,
+                              I=I, **kwargs) #dE/dx in J/m
+            doserates.append(flux*dEdx/rho_target)
+            #FIXME: At some point, we should compute the delta of the dose rate...
+    else:
+        if not material in ['water', 'silicon', 'tissue']:
+            print 'ERROR: Invalid material specified'
+            return nan
+        if let_file is None:
+            #If it's stupid, but it works, it isn't stupid!
+            let_dir = join(dirname(getfile(planetoparse)), 'let_data_charged')
+            part_fname = join(let_dir, 
+                              __get_particle_filename_charged(hist.particle, material))
+            if not exists(part_fname):
+                print 'ERROR: no LET data file found for', hist.particle, 'in', material
+                print '\tFalling back to Bethe- Bloch'
+                return hist2dose(hist, material=material, use_bb=True, 
+                                 Z_target=Z_target, A_target=A_target, 
+                                 rho_target=rho_target, I=I, 
+                                 relativistic=relativistic, **kwargs)
         else:
-            if E < m*c**2:
-                E = 0.
-            v_proj = c*sqrt(1-m**2*c**4/(E - m*c**2)**2)
-            v_proj_delta = 0.
-        if isnan(v_proj):
-            print 'v is nan'
-            print '\tE =', E
-        if v_proj > c:
-            print 'v > c, constraining'
-            print '\tE =', E
-            v_proj = .99999*c
-        dEdx = bethebloch(v_proj, Z_proj, Z_target, A_target, rho_target,
-                          I=I, **kwargs) #dE/dx in J/m
-        doserates.append(flux*dEdx/rho_target)
-        #FIXME: At some point, we should compute the delta of the dose rate...
+            part_fname = let_file
+        print 'Using LET data from file', part_fname
+        let_data = loadtxt(part_fname, skiprows=2)
+        let_interpolator = interp1d(let_data[:,0], let_data[:,1], bounds_error=False)
+        for (E_low, E_high, E, flux, flux_delta) in hist.data:
+            dEdx = let_interpolator(E)*1e9*eV #dEdx in J/m
+            flux = flux*1e4 #flux in 1/m^2/s
+            flux_delta = flux_delta*1e4
+            doserates.append(flux*dEdx/rho_target)            
     return sum(doserates)
+    
+def __get_particle_filename_charged(particle, material):
+    """Generate let_data filename for given particle and material"""
+    from re import match
+    from os.path import join
+    filename_suffix = {'water': '.dEdxIonisationinWater.G4.9.6.p02.txt',
+                       'silicon': '.dEdxIonisationinG4_Si.G4.9.6.p02.txt',
+                       'tissue': '.dEdxIonisationinG4_TISSUE_SOFT_ICRP.G4.9.6.p02.txt'}
+    if not particle[-1] in ['+', '-'] and not particle in ['proton', 'alpha', 'deuteron', 'triton', 'He3']:
+        if match('^[A-Za-z]+[0-9]+', particle) is None: #The A is missing...
+            A = __get_Z_A(particle)[1]
+            particle += str(A)
+        particle += '[0.0]'
+    return particle + filename_suffix[material]
 
 def __get_Z_A(part_name):
     """Get particle Z and A from the Geant4 particle name"""
