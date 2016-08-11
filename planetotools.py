@@ -1100,3 +1100,49 @@ def __get_Z_A(part_name):
         return (nan, nan)
     else:
         return part_names[part_name]
+
+def neutral_hist2dose(hist, material='water', let_file = None, **kwargs):
+    """Compute dose rate from a charged particle energy spectrum. Tries to use
+    precomputed fluence-to-dose tables if available. Custom dose tables can be 
+    supplied to override the default ones."""
+    from bethebloch import bethebloch
+    from scipy.constants import eV, m_u, c
+    from numpy import isnan, loadtxt
+    from scipy.interpolate import interp1d
+    from os.path import dirname, join, exists
+    from inspect import getfile
+    import planetoparse #Trust me, this is needed.
+    doserates = []
+    doserates_delta = []
+    if not material in ['water', 'silicon', 'tissue']:
+        print 'ERROR: Invalid material specified'
+        return nan
+    if let_file is None:
+        #If it's stupid, but it works, it isn't stupid!
+        let_dir = join(dirname(getfile(planetoparse)), 'let_data_neutral')
+        part_fname = join(let_dir, 
+                          __get_particle_filename_neutral(hist.particle, material))
+        if not exists(part_fname):
+            print 'ERROR: no dose data file found for', hist.particle, 'in', material
+            return nan
+    else:
+        part_fname = let_file
+    print 'Using dose data from file', part_fname
+    let_data = loadtxt(part_fname, skiprows=2)
+    let_interpolator = interp1d(let_data[:,0], let_data[:,1], bounds_error=False)
+    rho = {'water': 1000., 'tissue': 1000., 'silicon': 2330.} #in kg/m^3
+    for (E_low, E_high, E, flux, flux_delta) in hist.data:
+        dEdx = let_interpolator(E)*1e9*eV*10**2*rho[material] #dEdx in J/m
+        flux = flux*1e4 #flux in 1/m^2/s
+        flux_delta = flux_delta*1e4
+        doserates.append(flux*dEdx/rho[material])
+    return sum(doserates)
+    
+def __get_particle_filename_neutral(particle, material):
+    """Generate let_data filename for given particle and material"""
+    from re import match
+    from os.path import join
+    filename_suffix = {'water': '.FluenceToDose.Water.G4.9.6.p02.0.txt',
+                       'silicon': '.FluenceToDose.Si.G4.9.6.p02.0.txt',
+                       'tissue': '.FluenceToDose.Tissue.G4.9.6.p02.0.txt'}
+    return particle + filename_suffix[material]
