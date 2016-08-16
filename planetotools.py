@@ -1020,10 +1020,10 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
             if not exists(part_fname):
                 print 'ERROR: no LET data file found for', hist.particle, 'in', material
                 print '\tFalling back to Bethe- Bloch'
-                return hist2dose(hist, material=material, use_bb=True, 
-                                 Z_target=Z_target, A_target=A_target, 
-                                 rho_target=rho_target, I=I, 
-                                 relativistic=relativistic, **kwargs)
+                return charged_hist2dose(hist, material=material, use_bb=True, 
+                                         Z_target=Z_target, A_target=A_target, 
+                                         rho_target=rho_target, I=I, 
+                                         relativistic=relativistic, **kwargs)
         else:
             part_fname = let_file
         print 'Using LET data from file', part_fname
