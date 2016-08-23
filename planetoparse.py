@@ -423,6 +423,22 @@ class histdata:
             return res
         else:
             return ''
+            
+    def __call__(self, value, interpolate='linear'):
+        """
+        Interpolate between values in the stored histogram. Right now, only
+        implemented for Histogram1D.
+        """
+        from scipy.interpolate import interp1d
+        if not self.type == 'Histogram1D':
+            print 'ERROR: Not implemented for 2D histograms.'
+            return nan
+        value_interpolator = interp1d(self.data[:,2], self.data[:,3], bounds_error = False)
+        error_interpolator = interp1d(self.data[:,2], self.data[:,4], bounds_error = False)
+        if type(value) == float or type(value) == float64:
+            return float64(value_interpolator(value)), float64(error_interpolator(value))
+        else:
+            return value_interpolator(value), error_interpolator(value)
 
 ####################
 #planetoparse class definition
