@@ -62,8 +62,8 @@ class histdata:
         if not self.scaled_per_nuc:
             if not weight is None:
                 self.nuc_weight = weight
-            self.data[:, :3] /= self.nuc_weight
-            self.data[:, :4] /= self.nuc_weight
+            self.data[:,0:3] /= self.nuc_weight
+            #self.data[:,3:5] *= self.nuc_weight
             titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Xaxis'])
             self.params['Xaxis'] = \
                 titleparse.group(1) + '[' +  titleparse.group(2) + '/nuc]'
@@ -75,8 +75,8 @@ class histdata:
     def unscale_per_nuc(self):
         """Remove energy scaling per nucleon from histogram."""
         if self.scaled_per_nuc:
-            self.data[:, :3] *= self.nuc_weight
-            self.data[:, :4] *= self.nuc_weight
+            self.data[:,0:3] *= self.nuc_weight
+            #self.data[:,3:5] /= self.nuc_weight
             self.params['Xaxis'] = re.sub('/nuc', '', self.params['Xaxis'])
             self.scaled_per_nuc = False
             return True
@@ -87,8 +87,7 @@ class histdata:
         """Scale histogram to Energy/sr."""
         if not self.params['Xaxis'] == 'cos_theta':
             if not self.scaled_per_sterad:
-                self.data[:, 3] /= 2*pi
-                self.data[:, 4] /= 2*pi
+                self.data[:,3:5] /= 2*pi
                 titleparse = re.match('(.*)\s*\[(.*)\]', self.params['Title'])
                 self.params['Title'] = \
                     titleparse.group(1) + '[' +  titleparse.group(2) + '/sr]'
@@ -102,8 +101,7 @@ class histdata:
     def unscale_per_sterad(self):
         """Remove energy scaling per sr from histogram."""
         if self.scaled_per_sterad:
-            self.data[:, 3] *= 2*pi
-            self.data[:, 4] *= 2*pi
+            self.data[:,3:5] *= 2*pi
             self.params['Title'] = re.sub('/sr', '', self.params['Title'])
             self.scaled_per_sterad = False
             return True

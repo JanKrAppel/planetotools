@@ -1013,11 +1013,14 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
             return nan
         if let_file is None:
             #If it's stupid, but it works, it isn't stupid!
+            part_name = hist.particle
+            if part_name[-5:] == '[0.0]':
+                part_name = part_name[:-5]
             let_dir = join(dirname(getfile(planetoparse)), 'let_data_charged')
             part_fname = join(let_dir, 
-                              __get_particle_filename_charged(hist.particle, material))
+                              __get_particle_filename_charged(part_name, material))
             if not exists(part_fname):
-                print 'ERROR: no LET data file found for', hist.particle, 'in', material
+                print 'ERROR: no LET data file found for', part_name, 'in', material
                 print '\tFalling back to Bethe- Bloch'
                 return charged_hist2dose(hist, material=material, use_bb=True, 
                                          Z_target=Z_target, A_target=A_target, 
@@ -1027,12 +1030,24 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
             part_fname = let_file
         print 'Using LET data from file', part_fname
         let_data = loadtxt(part_fname, skiprows=2)
-        let_interpolator = interp1d(let_data[:,0], let_data[:,1], bounds_error=False)
-        for (E_low, E_high, E, flux, flux_delta) in hist.data:
-            dEdx = let_interpolator(E)*1e9*eV #dEdx in J/m
-            flux = flux*1e4 #flux in 1/m^2/s
-            flux_delta = flux_delta*1e4
-            doserates.append(flux*dEdx/rho_target)            
+        let_interpolator = interp1d(let_data[:,0], let_data[:,1], bounds_error=True)
+        E_low, E_high, E, flux, flux_delta = hist.data.transpose()
+        det_thickness = 5e-4 #Detector thickness in m
+        dEdx = zeros(len(E))
+        for i in range(0, len(E)):
+            energy = E[i]
+            try:
+                dEdx[i] = let_interpolator(energy)*1e9*eV #dEdx in J/m
+            except ValueError:
+                print 'WARNING: dE/dx data unavailable for', energy, 'MeV'
+        E_dep = dEdx*det_thickness/1e6/eV #Deposited energy in MeV
+        corr_mask = E_dep > E
+        if (corr_mask == True).any():
+            print '\tCorrecting computed energy deposits higher than particle energy...'
+            dEdx[corr_mask] = E[corr_mask]*1e6*eV/det_thickness
+        flux = flux*1e4 #flux in 1/m^2/s
+        flux_delta = flux_delta*1e4
+        doserates.append(flux*dEdx/rho_target)            
     return sum(doserates)
     
 def __get_particle_filename_charged(particle, material):
@@ -1100,7 +1115,8 @@ def __get_Z_A(part_name):
     else:
         return part_names[part_name]
 
-def neutral_hist2dose(hist, material='water', let_file = None, **kwargs):
+def neutral_hist2dose(hist, material='water', let_file = None, use_4_10=True, 
+                      **kwargs):
     """Compute dose rate from a charged particle energy spectrum. Tries to use
     precomputed fluence-to-dose tables if available. Custom dose tables can be 
     supplied to override the default ones."""
@@ -1120,7 +1136,8 @@ def neutral_hist2dose(hist, material='water', let_file = None, **kwargs):
         #If it's stupid, but it works, it isn't stupid!
         let_dir = join(dirname(getfile(planetoparse)), 'let_data_neutral')
         part_fname = join(let_dir, 
-                          __get_particle_filename_neutral(hist.particle, material))
+                          __get_particle_filename_neutral(hist.particle, 
+                                                          material, use_4_10))
         if not exists(part_fname):
             print 'ERROR: no dose data file found for', hist.particle, 'in', material
             return nan
@@ -1128,20 +1145,25 @@ def neutral_hist2dose(hist, material='water', let_file = None, **kwargs):
         part_fname = let_file
     print 'Using dose data from file', part_fname
     let_data = loadtxt(part_fname, skiprows=2)
-    let_interpolator = interp1d(let_data[:,0], let_data[:,1], bounds_error=False)
-    rho = {'water': 1000., 'tissue': 1000., 'silicon': 2330.} #in kg/m^3
+    let_interpolator = interp1d(let_data[:,0], let_data[:,1], 
+                                bounds_error=False)
     for (E_low, E_high, E, flux, flux_delta) in hist.data:
-        dEdx = let_interpolator(E)*1e9*eV*10**2*rho[material] #dEdx in J/m
+        dEdx = let_interpolator(E)*1e-13 #dEdx in Gy*m^2
         flux = flux*1e4 #flux in 1/m^2/s
         flux_delta = flux_delta*1e4
-        doserates.append(flux*dEdx/rho[material])
+        doserates.append(flux*dEdx)
     return sum(doserates)
     
-def __get_particle_filename_neutral(particle, material):
+def __get_particle_filename_neutral(particle, material, use_4_10=True):
     """Generate let_data filename for given particle and material"""
     from re import match
     from os.path import join
-    filename_suffix = {'water': '.FluenceToDose.Water.G4.9.6.p02.0.txt',
-                       'silicon': '.FluenceToDose.Si.G4.9.6.p02.0.txt',
-                       'tissue': '.FluenceToDose.Tissue.G4.9.6.p02.0.txt'}
+    if particle == 'neutron' and use_4_10:
+        filename_suffix = {'water': '.FluenceToDose.Water.G4.9.6.p02.0.txt',
+                           'silicon': '.FluenceToDose.Si.G4.9.6.p02.0.txt',
+                           'tissue': '.FluenceToDose.Tissue.G4.10.01.p01.txt'}
+    else:
+        filename_suffix = {'water': '.FluenceToDose.Water.G4.9.6.p02.0.txt',
+                           'silicon': '.FluenceToDose.Si.G4.9.6.p02.0.txt',
+                           'tissue': '.FluenceToDose.Tissue.G4.9.6.p02.0.txt'}
     return particle + filename_suffix[material]
