@@ -1040,11 +1040,12 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
                 dEdx[i] = let_interpolator(energy)*1e9*eV #dEdx in J/m
             except ValueError:
                 print 'WARNING: dE/dx data unavailable for', energy, 'MeV'
-        E_dep = dEdx*det_thickness/1e6/eV #Deposited energy in MeV
-        corr_mask = E_dep > E
-        if (corr_mask == True).any():
-            print '\tCorrecting computed energy deposits higher than particle energy...'
-            dEdx[corr_mask] = E[corr_mask]*1e6*eV/det_thickness
+                dEdx[i] = 0. #Doesn't contribute to dose, so it should be safe
+#        E_dep = dEdx*det_thickness/1e6/eV #Deposited energy in MeV
+#        corr_mask = E_dep > E
+#        if (corr_mask == True).any():
+#            print '\tCorrecting computed energy deposits higher than particle energy...'
+#            dEdx[corr_mask] = E[corr_mask]*1e6*eV/det_thickness
         flux = flux*1e4 #flux in 1/m^2/s
         flux_delta = flux_delta*1e4
         doserates.append(flux*dEdx/rho_target)            
@@ -1167,3 +1168,67 @@ def __get_particle_filename_neutral(particle, material, use_4_10=True):
                            'silicon': '.FluenceToDose.Si.G4.9.6.p02.0.txt',
                            'tissue': '.FluenceToDose.Tissue.G4.9.6.p02.0.txt'}
     return particle + filename_suffix[material]
+    
+def compute_doses(planetodata, part_names, material='tissue', let_files=None):
+    """Convenience function to calculate all doses for a given planetodata 
+    instance. part_names should be a dictionary where each entry is a pair of
+    particle name (as they occur in the planetodata instance) and directions,
+    where direction should be one of 'up', 'down', or 'both'. let_files can be
+    passed as a dictionary containing the path to LET files for individual 
+    particles for the particle names."""
+    from numpy import sort
+    doses = {}
+    part_names_neutrals = {}
+    for particle in ['neutron', 'gamma']:
+        if particle in part_names:
+            part_names_neutrals[particle] = part_names[particle]
+            part_names.pop(particle)
+    for particle in part_names:
+        if particle in planetodata.flux_down:
+            for det in planetodata.flux_down[particle]:
+                let_file = None
+                if not let_files is None:
+                    if particle in let_files:
+                        let_file = let_files[particle]
+                hist_down = planetodata.flux_down[particle][det]
+                hist_up = planetodata.flux_up[particle][det]
+                if part_names[particle] == 'both':
+                    dose = charged_hist2dose(hist_down, material=material, 
+                                             let_file=let_file) + \
+                           charged_hist2dose(hist_up, material=material, 
+                                             let_file=let_file)
+                elif part_names[particle] == 'up':
+                    dose = charged_hist2dose(hist_up, material=material, 
+                                             let_file=let_file)
+                elif part_names[particle] == 'down':
+                    dose = charged_hist2dose(hist_down, material=material, 
+                                             let_file=let_file)
+                alt = float(hist_down.params['Altitude'].split(' ')[0])
+                if not det in doses:
+                    doses[det] = {'alt': alt, 'dose': 0.}
+                doses[det]['dose'] += dose
+    for particle in part_names_neutrals:
+        if particle in planetodata.flux_down:
+            for det in planetodata.flux_down[particle]:
+                let_file = None
+                if not let_files is None:
+                    if particle in let_files:
+                        let_file = let_files[particle]
+                hist_down = planetodata.flux_down[particle][det]
+                hist_up = planetodata.flux_up[particle][det]
+                if part_names_neutrals[particle] == 'both':
+                    dose = neutral_hist2dose(hist_down, material=material, 
+                                             let_file=let_file) + \
+                           neutral_hist2dose(hist_up, material=material, 
+                                             let_file=let_file)
+                elif part_names_neutrals[particle] == 'up':
+                    dose = neutral_hist2dose(hist_up, material=material, 
+                                             let_file=let_file)
+                elif part_names_neutrals[particle] == 'down':
+                    dose = neutral_hist2dose(hist_down, material=material, 
+                                             let_file=let_file)
+                alt = float(hist_down.params['Altitude'].split(' ')[0])
+                if not det in doses:
+                    doses[det] = {'alt': alt, 'dose': 0.}
+                doses[det]['dose'] += dose
+    return doses
