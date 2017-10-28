@@ -1176,7 +1176,6 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None):
     where direction should be one of 'up', 'down', or 'both'. let_files can be
     passed as a dictionary containing the path to LET files for individual 
     particles for the particle names."""
-    from numpy import sort
     doses = {}
     part_names_neutrals = {}
     for particle in ['neutron', 'gamma']:
