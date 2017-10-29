@@ -18,6 +18,50 @@ DEFAULT_SORT_CONFIG = {'flux_up': ['UpHist', '2'],
                        'flux2d_down': ['DownPosHist', '1'], }
 
 ####################
+#limitable_array class definition
+####################
+
+class limitable_array:
+    """Encapsulates numpy.array to allow limiting the energy range of the data
+    dynamically."""
+    
+    def __init__(self, data=None, limits=(-inf, inf), index_col=2):
+        self.set_data(data)
+        self.set_limits(limits, index_col=index_col)
+    
+    def set_limits(self, limits=None, index_col=None):
+        if not limits is None:
+            self.limits = limits
+        if not index_col is None:
+            self.index_col = index_col
+        self.__mask__ = (self.data[:,self.index_col] >= amin(self.limits))*\
+            (self.data[:,self.index_col] <= amax(self.limits))
+    
+    def set_data(self, data):
+        self.data = data
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        return self.data[self.__mask__][index]
+    
+    def __str__(self):
+        return str(self.data[self.__mask__])
+    
+    def __repr__(self):
+        return repr(self.data[self.__mask__])
+    
+    def __add__(self, other):
+        return self.data + other
+    
+    def __mul__(self, other):
+        return self.data * other
+    
+    def __truediv__(self, other):
+        return self.data / other
+
+####################
 #histdata class definition
 ####################
 
