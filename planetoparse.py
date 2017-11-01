@@ -103,6 +103,30 @@ class limitable_array:
         """Divides the data of the array by other. self.__mask__ is 
         intentionally not applied to guarantee data consistency."""
         return self.data / other
+    
+    def __eq__(self, other):
+        return self.data == other
+
+    def __ne__(self, other):
+        return self.data != other
+	
+    def __lt__(self, other):
+        return self.data < other
+    
+    def __le__(self, other):
+        return self.data <= other
+    
+    def __gt__(self, other):
+        return self.data > other
+    
+    def __ge__(self, other):
+        return self.data >= other
+    
+    def __bool__(self, other):
+        if self.data is None:
+            return False
+        else:
+            return True
 
 ####################
 #histdata class definition
