@@ -1199,7 +1199,7 @@ class planetoparse:
                 (res.data[:, 1] == hist2.data[:, 1]).all() or not \
                 (res.data[:, 2] == hist2.data[:, 2]).all() or not \
                 (res.data[:, 3] == hist2.data[:, 3]).all():
-                from scipy.interpolate import interp1d
+                from scipy.interpolate import interp2d
                 interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
                                         hist2.data[:, 4], bounds_error = False, 
                                         fill_value = 0.)

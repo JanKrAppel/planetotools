@@ -721,7 +721,7 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
                 zunits1 == zunits2):
                 print 'ERROR: Unable to combine histograms, units mismatch.'
                 return hist1
-            from scipy.interpolate import interp1d
+            from scipy.interpolate import interp2d
             interpolator = interp2d(hist2.data[:, 1], hist2.data[:, 3], 
                                     hist2.data[:, 4], bounds_error = False, 
                                     fill_value = 0.)
