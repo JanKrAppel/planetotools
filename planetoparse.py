@@ -25,40 +25,79 @@ class limitable_array:
     """Encapsulates numpy.array to allow limiting the energy range of the data
     dynamically."""
     
+    @property
+    def shape(self):
+        """Return the shape of the array data. Returns array.shape."""
+        if not self.data is None:
+            return self.data[self.__mask__].shape
+        else:
+            return None
+
     def __init__(self, data=None, limits=(-inf, inf), index_col=2):
+        """Set up limitable_array. data is an instance of numpy.array, limits
+        is a tuple of numbers such that (lower, upper) are the lower and upper
+        bounds, index_col is the column of data on which the limit should be 
+        imposed."""
         self.set_data(data)
-        self.set_limits(limits, index_col=index_col)
-    
+        self.set_limits(limits=limits, index_col=index_col)
+        
     def set_limits(self, limits=None, index_col=None):
+        """Set data limits. limits is a tuple of numbers such that 
+        (lower, upper) are the lower and upper bounds, index_col is the column 
+        of data on which the limit should be imposed."""
         if not limits is None:
             self.limits = limits
         if not index_col is None:
             self.index_col = index_col
-        self.__mask__ = (self.data[:,self.index_col] >= amin(self.limits))*\
-            (self.data[:,self.index_col] <= amax(self.limits))
-    
+        if not self.data is None and not self.limits is None and not self.index_col is None:
+            self.__mask__ = (self.data[:,self.index_col] >= amin(self.limits))*\
+                (self.data[:,self.index_col] <= amax(self.limits))
+        else:
+            self.__mask__ = None
+            
     def set_data(self, data):
+        """Set array data. data is an instance of numpy.array."""
         self.data = data
+        self.set_limits()
 
     def __len__(self):
-        return len(self.data)
+        """Returns len() for the data of the array."""
+        return len(self.data[self.__mask__])
     
     def __getitem__(self, index):
+        """Returns items from the data array as determined by index."""
         return self.data[self.__mask__][index]
     
+    def __setitem__(self, index, value):
+        """Sets items in the data array as determined by index to value."""
+        self.data[self.__mask__][index] = value
+    
     def __str__(self):
+        """Returns str() for the data of the array."""
         return str(self.data[self.__mask__])
     
     def __repr__(self):
+        """Returns repr() for the data of the array."""
         return repr(self.data[self.__mask__])
     
     def __add__(self, other):
+        """Adds other to the data of the array. self.__mask__ is intentionally
+        not applied to guarantee data consistency."""
         return self.data + other
     
+    def __sub__(self, other):
+        """Subtracts other from the data of the array. self.__mask__ is 
+        intentionally not applied to guarantee data consistency."""
+        return self.data + other
+
     def __mul__(self, other):
+        """Multiplies other with the data of the array. self.__mask__ is 
+        intentionally not applied to guarantee data consistency."""
         return self.data * other
     
     def __truediv__(self, other):
+        """Divides the data of the array by other. self.__mask__ is 
+        intentionally not applied to guarantee data consistency."""
         return self.data / other
 
 ####################
@@ -88,7 +127,8 @@ class histdata:
                     self.params[param] = float64(0.) + copyhist.params[param]
                 else:
                     self.params[param] = '' + copyhist.params[param]
-            self.data = zeros(copyhist.data.shape)
+            self.data = limitable_array()
+            self.data.set_data(zeros(copyhist.data.shape))
             for i in arange(0, len(copyhist.data), 1):
                 self.data[i] += copyhist.data[i]
             self.particle = '' + copyhist.particle
@@ -315,7 +355,8 @@ class histdata:
         self.params['interpolation'] = tmpparams['interpolation']
         #set data
         zerocol = zeros(len(tmpdata))
-        self.data = column_stack((zerocol, zerocol, tmpdata, zerocol))
+        self.data = limitable_array()
+        self.data.set_data(column_stack((zerocol, zerocol, tmpdata, zerocol)))
         for i in arange(0, len(self.data), 1):
             if i == 0:
                 bin_width = self.data[1, 2] - self.data[0, 2]
@@ -481,7 +522,14 @@ class histdata:
             return float64(value_interpolator(value)), float64(error_interpolator(value))
         else:
             return value_interpolator(value), error_interpolator(value)
-
+        
+    def set_limits(self, limits=None, index_col=None):
+        """
+        Set histogram limits via limitable_array. See 
+        limitable_array.set_limits()
+        """
+        self.data.set_limits(limits=limits, index_col=index_col)
+        
 ####################
 #planetoparse class definition
 ####################
@@ -540,8 +588,6 @@ class planetoparse:
         
     def parse_file(self, filename, verbosity = 0):
         """Parse a Planetocosmics ASCII output file."""
-        import os
-        import sys
         import cStringIO
         import subprocess
         if filename.endswith('.ascii.tar.gz'):    
@@ -765,7 +811,8 @@ class planetoparse:
         while not (line == DELIMITER or line == ''):
             tmpdat.append(array(line.split(), dtype = float64))
             line = infile.readline()
-        res.data = array(tmpdat)
+        res.data = limitable_array()
+        res.data.set_data(array(tmpdat))
         return res, infile, line        
 
     def __parse_2d_hist(self, infile, line):
