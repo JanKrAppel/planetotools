@@ -38,6 +38,10 @@ class limitable_array:
         is a tuple of numbers such that (lower, upper) are the lower and upper
         bounds, index_col is the column of data on which the limit should be 
         imposed."""
+        self.data = None
+        self.limits = None
+        self.__mask__ = None
+        self.index_col = None
         self.set_data(data)
         self.set_limits(limits=limits, index_col=index_col)
         
@@ -1188,11 +1192,12 @@ class planetoparse:
                 res.data[:, 3] /= scale_by
                 res.data[:, 4] = sqrt(res.data [:, 4]**2 + 
                                       error_interpolator(res.data[:, 2])**2)/scale_by
-                return res            
-            res.data[:, 3] += hist2.data[:, 3]
-            res.data[:, 3] /= scale_by
-            res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)/scale_by
-            return res
+                return res
+            else:
+                res.data[:, 3] += hist2.data[:, 3]
+                res.data[:, 3] /= scale_by
+                res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)/scale_by
+                return res
         elif hist1.type == hist2.type == 'Histogram2D':
             res = histdata(copyhist = hist1)
             if not (res.data[:, 0] == hist2.data[:, 0]).all() or not \
@@ -1211,11 +1216,12 @@ class planetoparse:
                 res.data[:, 5] = sqrt(res.data [:, 5]**2 + 
                                       error_interpolator(res.data[:, 1], 
                                                    res.data[:, 3])**2)/scale_by
-                return res            
-            res.data[:, 4] += hist2.data[:, 4]
-            res.data[:, 4] /= scale_by
-            res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)/scale_by
-            return res
+                return res
+            else:
+                res.data[:, 4] += hist2.data[:, 4]
+                res.data[:, 4] /= scale_by
+                res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)/scale_by
+                return res
 
     def __get_particle_name(self, element, isotope, regex = False):
         """Returns the Geant4 particle name for a given element and isotope."""

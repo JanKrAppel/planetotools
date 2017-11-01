@@ -692,18 +692,19 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             res.data[:, 3] /= scale_by
             res.data[:, 4] = sqrt(res.data [:, 4]**2 + 
                                   error_interpolator(res.data[:, 2])**2)/scale_by
-            return res            
-        xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
-        yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
-        xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
-        yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
-        if not (xunits1 == xunits2 and yunits1 == yunits2):
-            print 'ERROR: Unable to combine histograms, units mismatch.'
-            return hist1
-        res.data[:, 3] += hist2.data[:, 3]
-        res.data[:, 3] /= scale_by
-        res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)/scale_by
-        return res
+            return res
+        else:            
+            xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+            yunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+            xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+            yunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+            if not (xunits1 == xunits2 and yunits1 == yunits2):
+                print 'ERROR: Unable to combine histograms, units mismatch.'
+                return hist1
+            res.data[:, 3] += hist2.data[:, 3]
+            res.data[:, 3] /= scale_by
+            res.data[:, 4] = sqrt(res.data [:, 4]**2 + hist2.data[:, 4]**2)/scale_by
+            return res
     elif hist1.type == hist2.type == 'Histogram2D':
         res = histdata(copyhist = hist1)
         if not (res.data[:, 0] == hist2.data[:, 0]).all() or not \
@@ -733,21 +734,22 @@ def __combine_single_hists(hist1, hist2, scale_by = 1.):
             res.data[:, 5] = sqrt(res.data [:, 5]**2 + 
                                   error_interpolator(res.data[:, 1], 
                                                res.data[:, 3])**2)/scale_by
-            return res            
-        xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
-        yunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
-        zunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
-        xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
-        yunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
-        zunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
-        if not (xunits1 == xunits2 and yunits1 == yunits2 and\
-            zunits1 == zunits2):
-            print 'ERROR: Unable to combine histograms, units mismatch.'
-            return hist1
-        res.data[:, 4] += hist2.data[:, 4]
-        res.data[:, 4] /= scale_by
-        res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)/scale_by
-        return res
+            return res        
+        else:
+            xunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+            yunits1 = __normalize_units(__parse_title(res.params['Xaxis'])[1])
+            zunits1 = __normalize_units(__parse_title(res.params['Title'])[1])
+            xunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+            yunits2 = __normalize_units(__parse_title(hist2.params['Xaxis'])[1])
+            zunits2 = __normalize_units(__parse_title(hist2.params['Title'])[1])
+            if not (xunits1 == xunits2 and yunits1 == yunits2 and\
+                zunits1 == zunits2):
+                print 'ERROR: Unable to combine histograms, units mismatch.'
+                return hist1
+            res.data[:, 4] += hist2.data[:, 4]
+            res.data[:, 4] /= scale_by
+            res.data[:, 5] = sqrt(res.data [:, 5]**2 + hist2.data[:, 5]**2)/scale_by
+            return res
         
 def add_histograms(hists, scale_by = 1.):
     """Add single histograms."""
