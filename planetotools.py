@@ -965,7 +965,7 @@ def enumerate_hist_list(list):
 
 def charged_hist2dose(hist, material='water', let_file = None, use_bb=False, 
                       Z_target=3.33333, A_target=6., rho_target=1e3,
-                      I=75., relativistic=True, **kwargs):
+                      I=75., relativistic=True, Elims=(-inf, inf), **kwargs):
     """Compute dose rate from a charged particle energy spectrum. Tries to use
     precomputed fluence-to-dEdx tables if available, if not, it defaults to 
     using Bethe-Bloch for dEdx. Custom dEdx tables can be supplied to override
@@ -979,9 +979,10 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
     import planetoparse #Trust me, this is needed.
     doserates = []
     doserates_delta = []
+    Elims_mask = (hist.data[:,1] >= amin(Elims))*(hist.data[:,1] <= amax(Elims))
     if use_bb:
         print 'Using Bethe- Bloch for LET data'
-        for (E_low, E_high, E, flux, flux_delta) in hist.data:
+        for (E_low, E_high, E, flux, flux_delta) in hist.data[Elims_mask]:
             E = E*1e6*eV #E in Joule
             E_low = E_low*1e6*eV
             E_high = E_high*1e6*eV
@@ -1032,22 +1033,16 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
             part_fname = let_file
         print 'Using LET data from file', part_fname
         let_data = loadtxt(part_fname, skiprows=2)
-        let_interpolator = interp1d(let_data[:,0], let_data[:,1], bounds_error=True)
-        E_low, E_high, E, flux, flux_delta = hist.data.transpose()
-        det_thickness = 5e-4 #Detector thickness in m
+        let_interpolator = interp1d(let_data[:,0], let_data[:,1], 
+                                    bounds_error=True)
+        E_low, E_high, E, flux, flux_delta = hist.data[Elims_mask].transpose()
         dEdx = zeros(len(E))
         for i in range(0, len(E)):
-            energy = E[i]
             try:
-                dEdx[i] = let_interpolator(energy)*1e9*eV #dEdx in J/m
+                dEdx[i] = let_interpolator(E[i])*1e9*eV #dEdx in J/m
             except ValueError:
                 print 'WARNING: dE/dx data unavailable for', energy, 'MeV'
                 dEdx[i] = 0. #Doesn't contribute to dose, so it should be safe
-#        E_dep = dEdx*det_thickness/1e6/eV #Deposited energy in MeV
-#        corr_mask = E_dep > E
-#        if (corr_mask == True).any():
-#            print '\tCorrecting computed energy deposits higher than particle energy...'
-#            dEdx[corr_mask] = E[corr_mask]*1e6*eV/det_thickness
         flux = flux*1e4 #flux in 1/m^2/s
         flux_delta = flux_delta*1e4
         doserates.append(flux*dEdx/rho_target)            
@@ -1119,7 +1114,7 @@ def __get_Z_A(part_name):
         return part_names[part_name]
 
 def neutral_hist2dose(hist, material='water', let_file = None, use_4_10=True, 
-                      **kwargs):
+                      Elims=(-inf, inf), **kwargs):
     """Compute dose rate from a charged particle energy spectrum. Tries to use
     precomputed fluence-to-dose tables if available. Custom dose tables can be 
     supplied to override the default ones."""
@@ -1132,6 +1127,7 @@ def neutral_hist2dose(hist, material='water', let_file = None, use_4_10=True,
     import planetoparse #Trust me, this is needed.
     doserates = []
     doserates_delta = []
+    Elims_mask = (hist.data[:,1] >= amin(Elims))*(hist.data[:,1] <= amax(Elims))
     if not material in ['water', 'silicon', 'tissue']:
         print 'ERROR: Invalid material specified'
         return nan
@@ -1149,12 +1145,18 @@ def neutral_hist2dose(hist, material='water', let_file = None, use_4_10=True,
     print 'Using dose data from file', part_fname
     let_data = loadtxt(part_fname, skiprows=2)
     let_interpolator = interp1d(let_data[:,0], let_data[:,1], 
-                                bounds_error=False)
-    for (E_low, E_high, E, flux, flux_delta) in hist.data:
-        dEdx = let_interpolator(E)*1e-13 #dEdx in Gy*m^2
-        flux = flux*1e4 #flux in 1/m^2/s
-        flux_delta = flux_delta*1e4
-        doserates.append(flux*dEdx)
+                                bounds_error=True)
+    E_low, E_high, E, flux, flux_delta = hist.data[Elims_mask].transpose()
+    dEdx = zeros(len(E))
+    for i in range(0, len(E)):
+        try:
+            dEdx[i] = let_interpolator(E[i])*1e-13 #dEdx in Gy*m^2
+        except ValueError:
+            print 'WARNING: dE/dx data unavailable for', E[i], 'MeV'
+            dEdx[i] = 0. #Doesn't contribute to dose, so it should be safe
+    flux = flux*1e4 #flux in 1/m^2/s
+    flux_delta = flux_delta*1e4
+    doserates.append(flux*dEdx)
     return sum(doserates)
     
 def __get_particle_filename_neutral(particle, material, use_4_10=True):
@@ -1171,7 +1173,8 @@ def __get_particle_filename_neutral(particle, material, use_4_10=True):
                            'tissue': '.FluenceToDose.Tissue.G4.9.6.p02.0.txt'}
     return particle + filename_suffix[material]
     
-def compute_doses(planetodata, part_names, material='tissue', let_files=None):
+def compute_doses(planetodata, part_names, material='tissue', let_files=None,
+                  Elims=(-inf, inf)):
     """Convenience function to calculate all doses for a given planetodata 
     instance. part_names should be a dictionary where each entry is a pair of
     particle name (as they occur in the planetodata instance) and directions,
@@ -1195,15 +1198,15 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None):
                 hist_up = planetodata.flux_up[particle][det]
                 if part_names[particle] == 'both':
                     dose = charged_hist2dose(hist_down, material=material, 
-                                             let_file=let_file) + \
+                                             let_file=let_file, Elims=Elims) + \
                            charged_hist2dose(hist_up, material=material, 
-                                             let_file=let_file)
+                                             let_file=let_file, Elims=Elims)
                 elif part_names[particle] == 'up':
                     dose = charged_hist2dose(hist_up, material=material, 
-                                             let_file=let_file)
+                                             let_file=let_file, Elims=Elims)
                 elif part_names[particle] == 'down':
                     dose = charged_hist2dose(hist_down, material=material, 
-                                             let_file=let_file)
+                                             let_file=let_file, Elims=Elims)
                 alt = float(hist_down.params['Altitude'].split(' ')[0])
                 if not det in doses:
                     doses[det] = {'alt': alt, 'dose': 0.}
@@ -1219,15 +1222,15 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None):
                 hist_up = planetodata.flux_up[particle][det]
                 if part_names_neutrals[particle] == 'both':
                     dose = neutral_hist2dose(hist_down, material=material, 
-                                             let_file=let_file) + \
+                                             let_file=let_file, Elims=Elims) + \
                            neutral_hist2dose(hist_up, material=material, 
-                                             let_file=let_file)
+                                             let_file=let_file, Elims=Elims)
                 elif part_names_neutrals[particle] == 'up':
                     dose = neutral_hist2dose(hist_up, material=material, 
-                                             let_file=let_file)
+                                             let_file=let_file, Elims=Elims)
                 elif part_names_neutrals[particle] == 'down':
                     dose = neutral_hist2dose(hist_down, material=material, 
-                                             let_file=let_file)
+                                             let_file=let_file, Elims=Elims)
                 alt = float(hist_down.params['Altitude'].split(' ')[0])
                 if not det in doses:
                     doses[det] = {'alt': alt, 'dose': 0.}
