@@ -155,8 +155,7 @@ class histdata:
                     self.params[param] = float64(0.) + copyhist.params[param]
                 else:
                     self.params[param] = '' + copyhist.params[param]
-            self.data = limitable_array()
-            self.data.set_data(zeros(copyhist.data.shape))
+            self.data = zeros(copyhist.data.shape)
             for i in arange(0, len(copyhist.data), 1):
                 self.data[i] += copyhist.data[i]
             self.particle = '' + copyhist.particle
@@ -383,8 +382,7 @@ class histdata:
         self.params['interpolation'] = tmpparams['interpolation']
         #set data
         zerocol = zeros(len(tmpdata))
-        self.data = limitable_array()
-        self.data.set_data(column_stack((zerocol, zerocol, tmpdata, zerocol)))
+        self.data = column_stack((zerocol, zerocol, tmpdata, zerocol))
         for i in arange(0, len(self.data), 1):
             if i == 0:
                 bin_width = self.data[1, 2] - self.data[0, 2]
@@ -550,14 +548,7 @@ class histdata:
             return float64(value_interpolator(value)), float64(error_interpolator(value))
         else:
             return value_interpolator(value), error_interpolator(value)
-        
-    def set_limits(self, limits=None, index_col=None):
-        """
-        Set histogram limits via limitable_array. See 
-        limitable_array.set_limits()
-        """
-        self.data.set_limits(limits=limits, index_col=index_col)
-        
+
 ####################
 #planetoparse class definition
 ####################
@@ -839,8 +830,7 @@ class planetoparse:
         while not (line == DELIMITER or line == ''):
             tmpdat.append(array(line.split(), dtype = float64))
             line = infile.readline()
-        res.data = limitable_array()
-        res.data.set_data(array(tmpdat))
+        res.data = array(tmpdat)
         return res, infile, line        
 
     def __parse_2d_hist(self, infile, line):
