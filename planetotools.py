@@ -1185,12 +1185,15 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None,
     for individual particles."""
     doses = {}
     part_names_neutrals = {}
+    #Split neutral particle into their own particle dict:
     for particle in ['neutron', 'gamma']:
         if particle in part_names:
             part_names_neutrals[particle] = part_names[particle]
             part_names.pop(particle)
+    #Compute doses for charged particles:
     for particle in part_names:
         if particle in planetodata.flux_down:
+            #Check limits
             limits = (-inf, inf)
             if type(Elims) is dict:
                 if particle in Elims:
@@ -1198,6 +1201,7 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None,
                         limits = Elims[particle]
             elif type(Elims) is tuple:
                 limits = Elims
+            #Compute doses
             for det in planetodata.flux_down[particle]:
                 let_file = None
                 if not let_files is None:
@@ -1216,12 +1220,16 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None,
                 elif part_names[particle] == 'down':
                     dose = charged_hist2dose(hist_down, material=material, 
                                              let_file=let_file, Elims=limits)
+                #Build output
                 alt = float(hist_down.params['Altitude'].split(' ')[0])
+                depth = float(hist_down.params['Depth'].split(' ')[0])
                 if not det in doses:
-                    doses[det] = {'alt': alt, 'dose': 0.}
+                    doses[det] = {'alt': alt, 'depth': depth, 'dose': 0.}
                 doses[det]['dose'] += dose
+    #Compute doses for neutral particles:
     for particle in part_names_neutrals:
         if particle in planetodata.flux_down:
+            #Check limits
             limits = (-inf, inf)
             if type(Elims) is dict:
                 if particle in Elims:
@@ -1229,6 +1237,7 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None,
                         limits = Elims[particle]
             elif type(Elims) is tuple:
                 limits = Elims
+            #Compute doses
             for det in planetodata.flux_down[particle]:
                 let_file = None
                 if not let_files is None:
@@ -1247,8 +1256,10 @@ def compute_doses(planetodata, part_names, material='tissue', let_files=None,
                 elif part_names_neutrals[particle] == 'down':
                     dose = neutral_hist2dose(hist_down, material=material, 
                                              let_file=let_file, Elims=limits)
+                #Build output
                 alt = float(hist_down.params['Altitude'].split(' ')[0])
+                depth = float(hist_down.params['Depth'].split(' ')[0])
                 if not det in doses:
-                    doses[det] = {'alt': alt, 'dose': 0.}
+                    doses[det] = {'alt': alt, 'depth': depth, 'dose': 0.}
                 doses[det]['dose'] += dose
     return doses
