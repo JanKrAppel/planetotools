@@ -548,6 +548,24 @@ class histdata:
             return float64(value_interpolator(value)), float64(error_interpolator(value))
         else:
             return value_interpolator(value), error_interpolator(value)
+        
+    def get_E(self, Elims=(-inf, inf)):
+        """
+        Returns the energy scale of the stored histogram. Parameter Elims can 
+        be passed as a tuple (lower, upper) denoting the lower and upper bound
+        for the energies.
+        """
+        Emask = (self.data[:,2] >= amin(Elims))*(self.data[:,2] <= amax(Elims))
+        return self.data[:,2][Emask]
+    
+    def get_binwidths(self, Elims=(-inf, inf)):
+        """
+        Returns the bin widths of the stored histogram. Parameter Elims can 
+        be passed as a tuple (lower, upper) denoting the lower and upper bound
+        for the energies.
+        """
+        Emask = (self.data[:,2] >= amin(Elims))*(self.data[:,2] <= amax(Elims))
+        return self.data[:,1][Emask] - self.data[:,0][Emask]
 
 ####################
 #planetoparse class definition
