@@ -1041,7 +1041,8 @@ def charged_hist2dose(hist, material='water', let_file = None, use_bb=False,
             try:
                 dEdx[i] = let_interpolator(E[i])*1e9*eV #dEdx in J/m
             except ValueError:
-                print 'WARNING: dE/dx data unavailable for', E[i], 'MeV'
+                print 'WARNING: dE/dx data unavailable for', part_name, \
+                    'in', material, 'at', E[i], 'MeV'
                 dEdx[i] = 0. #Doesn't contribute to dose, so it should be safe
         flux = flux*1e4 #flux in 1/m^2/s
         flux_delta = flux_delta*1e4
